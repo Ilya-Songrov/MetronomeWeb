@@ -1,14 +1,15 @@
 # Documentation
+# https://www.jsonrpc.org/specification
 
-################## HTTP ##################
-# POST /get_id
---> {"time_utc": ""}
-<-- {"client_id": 111222}
 
 ################## websockets ##################
 ###### client to server
+# get client id
+--> {"jsonrpc": "2.0", "method": "get_client_id", "params": "", "id": 1}
+<-- {"jsonrpc": "2.0", "result": {"status":"success/error","message":"description"}, "id": 1}
+
 # subscribe to a group
---> {"jsonrpc": "2.0", "method": "subscribe_to_group", "params": {"client_id": 111222,"group_id": 111222}, "id": 1}
+--> {"jsonrpc": "2.0", "method": "subscribe_to_group", "params": {"client_id": 111222,"group_id": 333222}, "id": 1}
 <-- {"jsonrpc": "2.0", "result": {"status":"success/error","message":"group is not exist"}, "id": 1}
 
 # create group
@@ -16,11 +17,11 @@
 <-- {"jsonrpc": "2.0", "result": {"status":"success/error"}, "id": 1}
 
 # start metronome
---> {"jsonrpc": "2.0", "method": "start_metronome", "params": {"client_id": 111222,"group_id": 111222,"current_client_ts":1662817489000,"bpm":90}, "id": 1}
+--> {"jsonrpc": "2.0", "method": "start_metronome", "params": {"client_id": 111222,"group_id": 333222,"current_client_ts":1662817489000,"bpm":90}, "id": 1}
 <-- {"jsonrpc": "2.0", "result": {"status":"success/error","message":"description"}, "id": 1}
 
 # stop metronome
---> {"jsonrpc": "2.0", "method": "stop_metronome", "params": {"client_id": 111222,"group_id": 111222,"current_client_ts":1662817489000}, "id": 1}
+--> {"jsonrpc": "2.0", "method": "stop_metronome", "params": {"client_id": 111222,"group_id": 333222,"current_client_ts":1662817489000}, "id": 1}
 <-- {"jsonrpc": "2.0", "result": {"status":"success/error","message":"description"}, "id": 1}
 
 
