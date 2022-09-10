@@ -6,7 +6,7 @@
 ###### client to server
 # get client id
 --> {"jsonrpc": "2.0", "method": "get_client_id", "params": "", "id": 1}
-<-- {"jsonrpc": "2.0", "result": {"status":"success/error","message":"description"}, "id": 1}
+<-- {"jsonrpc": "2.0", "result": {"client_id": 111222,"status":"success/error","message":"description"}, "id": 1}
 
 # subscribe to a group
 --> {"jsonrpc": "2.0", "method": "subscribe_to_group", "params": {"client_id": 111222,"group_id": 333222}, "id": 1}
