@@ -5,7 +5,7 @@ from app.store.ws.ws_accessor import Event
 
 from app.base.utils import do_by_timeout_wrapper
 
-import time
+from datetime import datetime
 
 class GeoServerEventKind:
     INITIAL = 'initial'
@@ -106,7 +106,9 @@ class GeoManager(BaseManager):
         event = Event(
             kind="test-kind",
             payload={
-                'data': f'server response {time.time_ns()}'
+                "timestamp": f"{datetime.now().timestamp()}"
+                , "date1 from python timestamp": f"{datetime.utcfromtimestamp(datetime.now().timestamp())}"
+                , "date2 from int timestamp": f"{datetime.utcfromtimestamp(round(datetime.now().timestamp() * 1000) / 1e3)}"
             },
         )
         await self.store.ws_accessor.push(event, connection_id=connection_id)
