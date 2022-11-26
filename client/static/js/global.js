@@ -1,14 +1,14 @@
 // globals
 let connection;
-let map;
+// let map;
 let path;
 let run = true;
-let generateLocationButton = document.getElementById('generate-location')
-let useFakeLocation = false;
+// let generateLocationButton = document.getElementById('generate-location')
+// let useFakeLocation = false;
 
 // user
 let username;
-let id = 'initial';
+let id = 'initial-id';
 let latitude, longitude;
 
 const MY_COLOR = 'green';

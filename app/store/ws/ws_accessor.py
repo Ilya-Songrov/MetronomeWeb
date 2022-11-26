@@ -2,20 +2,16 @@ import asyncio
 import json
 import typing
 import uuid
-from asyncio import Task
-from dataclasses import asdict, dataclass
-from typing import Any, Optional
+from asyncio import Task, CancelledError
+from dataclasses import dataclass, asdict
 
-from aiohttp import web
+from aiohttp.web_ws import WebSocketResponse
 
 from app.base.accessor import BaseAccessor
+from app.base.utils import do_by_timeout_wrapper
 
 if typing.TYPE_CHECKING:
     from app.base.application import Request
-
-
-class WSConnectionNotFound(Exception):
-    pass
 
 
 @dataclass
@@ -23,83 +19,126 @@ class Event:
     kind: str
     payload: dict
 
+    def __str__(self):
+        return f'Event<{self.kind}>'
+
+
+class WSContext:
+    def __init__(
+            self,
+            accessor: 'WSAccessor',
+            request: 'Request',
+            close_callback: typing.Callable[[str], typing.Awaitable] | None = None,
+    ):
+        self._accessor = accessor
+        self._request = request
+        self.connection_id: typing.Optional[str] = None
+        self._close_callback = close_callback
+
+    async def __aenter__(self) -> str:
+        self.connection_id = await self._accessor.open(self._request, close_callback=self._close_callback)
+        return self.connection_id
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self._accessor.close(self.connection_id)
+
+
+@dataclass
+class Connection:
+    session: WebSocketResponse
+    timeout_task: Task
+    close_callback: typing.Callable[[str], typing.Awaitable] | None
+
 
 class WSAccessor(BaseAccessor):
     class Meta:
-        name = 'ws'
+        name = 'ws_accessor'
 
-    CONNECTION_TIMEOUT = 10
+    CONNECTION_TIMEOUT_SECONDS = 12315
 
-    def _init_(self):
-        self._connections: dict[str, Any] = {}
-        self._timeout_tasks: dict[str, Task] = {}
+    def _init_(self) -> None:
+        self._connections: dict[str, Connection] = {}
 
-    async def handle_request(self, request: 'Request'):
-        ws_response = web.WebSocketResponse()
+    async def open(
+            self,
+            request: 'Request',
+            close_callback: typing.Callable[[str], typing.Awaitable[typing.Any]] | None = None,
+    ) -> str:
+        ws_response = WebSocketResponse()
         await ws_response.prepare(request)
         connection_id = str(uuid.uuid4())
-        self._connections[connection_id] = ws_response
-        self._refresh_timeout(connection_id)
-        await self.store.geo.handle_open(str(connection_id))
-        await self.read(connection_id)
-        await self.close(connection_id)
-        return ws_response
+
+        self.logger.info(f'Handling new connection with {connection_id=}')
+
+        self._connections[connection_id] = Connection(
+            session=ws_response,
+            timeout_task=self._create_timeout_task(connection_id),
+            close_callback=close_callback,
+        )
+        return connection_id
+
+    def _create_timeout_task(self, connection_id: str) -> Task:
+        def log_timeout(result: Task):
+            try:
+                exc = result.exception()
+            except CancelledError:
+                return
+
+            if exc:
+                self.logger.error('Can not close connection by timeout', exc_info=result.exception())
+            else:
+                self.logger.info(f'Connection with {connection_id=} was closed by inactivity')
+
+        task = asyncio.create_task(
+            do_by_timeout_wrapper(
+                self.close,
+                self.CONNECTION_TIMEOUT_SECONDS,
+                args=[connection_id],
+            )
+        )
+        task.add_done_callback(log_timeout)
+        return task
 
     async def close(self, connection_id: str):
-        try:
-            connection = self._connections.pop(connection_id)
-            await connection.close()
-        except KeyError:
-            return None
+        connection = self._connections.pop(connection_id, None)
+        if not connection:
+            return
 
-        await self.store.geo.handle_close(str(connection_id))
-        return None
+        self.logger.info(f'Closing {connection_id=}')
 
-    async def push(self, connection_id: str, event: Event):
-        json_data = json.dumps(asdict(event))
-        await self._push(connection_id, json_data)
+        if connection.close_callback:
+            await connection.close_callback(connection_id)
 
-    async def read(self, connection_id: str):
-        async for message in self._connections[connection_id]:
-            self._refresh_timeout(connection_id)
-            raw_event = json.loads(message.data)
-            await self.store.geo.handle_event(event=Event(
-                kind=raw_event['kind'],
-                payload=raw_event['payload'],
-            ))
+        if not connection.session.closed:
+            await connection.session.close()
 
-    async def push_all(self, event: Event, except_of: Optional[list[str]] = None):
-        if except_of is None:
-            except_of = []
-        json_data = json.dumps(asdict(event))
-        results = await asyncio.gather(
-            *[
-                self._push(id_, json_data)
-                for id_ in self._connections.keys()
-                if str(id_) not in except_of
-            ], return_exceptions=True,
-        )
-        for result in results:
-            if isinstance(result, Exception):
-                self.logger.warning(result)
+    async def push(self, event: Event, connection_id: str):
+        data = json.dumps(asdict(event), separators=(',', ':'))
+        return await self._push(self._connections[connection_id].session, data=data)
 
-    async def _push(self, id_: str, data: str):
-        try:
-            await self._connections[id_].send_str(data)
-        except KeyError:
-            raise WSConnectionNotFound
-        except ConnectionResetError:
-            self._connections.pop(id_)
-            raise
+    async def _push(self, connection: 'WebSocketResponse', data: str):
+        await connection.send_str(data)
 
-    def _refresh_timeout(self, connection_id: str):
-        task = self._timeout_tasks.get(connection_id)
-        if task:
-            task.cancel()
+    async def stream(self, connection_id: str) -> typing.AsyncIterable[Event]:
+        async for message in self._connections[connection_id].session:
+            await self.refresh_connection(connection_id)
+            print(f"input message: {message}")
+            try:
+                data = message.json()  # noqa
+            except:
+                data = {"kind":"insert-kind","payload":"insert-payload"}
+                
+            yield Event(kind=data['kind'], payload=data['payload'])
 
-        self._timeout_tasks[connection_id] = asyncio.create_task(self._close_by_timeout(connection_id))
+    async def broadcast(self, event: Event, except_of: list[str] | None = None):
+        self.logger.info(f'Broadcasting {event} for all except of {except_of}')
+        ops = []
+        for connection_id in self._connections.keys():
+            if except_of and connection_id in except_of:
+                continue
+            ops.append(self.push(event=event, connection_id=connection_id))
+        await asyncio.gather(*ops)
 
-    async def _close_by_timeout(self, connection_id: str):
-        await asyncio.sleep(self.CONNECTION_TIMEOUT)
-        await self.store.geo.handle_close(connection_id)
-        await self.store.ws.close(connection_id)
+    async def refresh_connection(self, connection_id: str):
+        self._connections[connection_id].timeout_task.cancel()
+        self._connections[connection_id].timeout_task = self._create_timeout_task(connection_id)

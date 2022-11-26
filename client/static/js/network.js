@@ -3,14 +3,20 @@ class Connection {
         if (path === '${CONNECT_PATH}') {
             path = 'ws://localhost:8000/connect';
         }
+        console.log(`Connection Consrtuctor path: ${path}`);
         this.connection = new WebSocket(path);
-        this.connection.onmessage = onMessage;
+        this.connection.onopen = onOpen;
         this.connection.onclose = onClose;
         this.connection.onerror = onError;
+        this.connection.onmessage = onMessage;
     }
 
     push = (kind, data) => {
         this.connection.send(JSON.stringify({kind: kind, payload: data}));
+    }
+
+    push_str = (strData) => {
+        this.connection.send(strData);
     }
 }
 

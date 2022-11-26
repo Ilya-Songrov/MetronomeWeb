@@ -1,48 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+  <head>
+    <title>WebSocket Live Location!</title>
     <meta charset="utf-8">
-    <title>WebSocket Live Location</title>
-    <script src="https://api-maps.yandex.ru/2.1/?apikey=${CONNECT_TOKEN}&lang=ru_RU"
-            type="text/javascript">
+    <link rel="icon" type="image/png" href="static/favicon.svg"/>
+  </head>
+  <body>
+    <p><strong>This is MetronomeWeb Client-Tester</strong></p>
+    <label for="json_text_id_rq">Client RQ:</label>
+    <textarea id="json_text_id_rq" name="json_text_name_rq" rows="5" cols="33" placeholder="Json params" style="width:100%"></textarea>
+    <button style="background-color:rgb(102, 116, 241);margin:auto;display:block" onclick="onClickButtonSend(document.getElementById('json_text_id_rq').value)">Send</button>
+    <label for="json_text_id_rq">Server RS:</label>
+    <textarea id="json_text_id_rs" name="json_text_name_rs" rows="5" cols="33" placeholder="Json params" style="width:100%"></textarea>
+    <script type="application/javascript" src="static/js/global.js"></script>
+    <script type="application/javascript" src="static/js/utils.js"></script>
+    <script type="application/javascript" src="static/js/map.js"></script>
+    <script type="application/javascript" src="static/js/network.js"></script>
+    <script type="application/javascript" src="static/js/app.js"></script>
+    <script type="text/javascript">
+      path = '${CONNECT_PATH}';
+      // username = prompt('Введи свое имя', 'Аноним');
+      // username = 'Test-name'
+      init();
     </script>
-    <link rel="icon" href="static/favicon.svg">
-    <style>
-        #generate-location {
-            font-family: sans-serif;
-            position: absolute;
-            bottom: 5%;
-            left: 2%;
-            background-color: whitesmoke;
-            opacity: 0.7;
-            -webkit-box-shadow: 0 4px 8px 0 rgba(34, 60, 80, 0.2);
-            -moz-box-shadow: 0 4px 8px 0 rgba(34, 60, 80, 0.2);
-            box-shadow: 0 4px 8px 0 rgba(34, 60, 80, 0.2);
-            padding: 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: 500;
-            display: none;
+    <script type = "text/javascript">
+        function myfunction() {   
+          alert("how are you");
         }
-
-        #generate-location:hover {
-            opacity: 1;
-            background-color: whitesmoke;
-        }
-    </style>
-</head>
-<body>
-<div id="map" style="width: 100vw; height: 100vh"></div>
-<div id="generate-location">Сгенерировать случайную позицию</div>
-</body>
-<script type="application/javascript" src="static/js/global.js"></script>
-<script type="application/javascript" src="static/js/utils.js"></script>
-<script type="application/javascript" src="static/js/map.js"></script>
-<script type="application/javascript" src="static/js/network.js"></script>
-<script type="application/javascript" src="static/js/app.js"></script>
-<script type="text/javascript">
-    path = '${CONNECT_PATH}';
-    username = prompt('Введи свое имя', 'Аноним');
-    ymaps.ready(init);
-</script>
+    </script>  
+  </body>
 </html>
