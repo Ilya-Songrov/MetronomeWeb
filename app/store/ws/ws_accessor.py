@@ -7,20 +7,13 @@ from dataclasses import dataclass, asdict
 
 from aiohttp.web_ws import WebSocketResponse
 
+from app.store.jsonrpc.jsonrpc import JSON_RPC_RQ, JSON_RPC_RS  
 from app.base.accessor import BaseAccessor
 from app.base.utils import do_by_timeout_wrapper
 
 if typing.TYPE_CHECKING:
     from app.base.application import Request
 
-
-@dataclass
-class Event:
-    kind: str
-    payload: dict
-
-    def __str__(self):
-        return f'Event<{self.kind}>'
 
 
 class WSContext:
@@ -68,7 +61,7 @@ class WSAccessor(BaseAccessor):
         await ws_response.prepare(request)
         connection_id = str(uuid.uuid4())
 
-        self.logger.info(f'Handling new connection with {connection_id=}')
+        self.logger.info(f'Handling new connection. Generate ID for it: {connection_id=}')
 
         self._connections[connection_id] = Connection(
             session=ws_response,
@@ -112,31 +105,27 @@ class WSAccessor(BaseAccessor):
         if not connection.session.closed:
             await connection.session.close()
 
-    async def push(self, event: Event, connection_id: str):
-        data = json.dumps(asdict(event), separators=(',', ':'))
+    async def push(self, rs: JSON_RPC_RQ, connection_id: str):
+        data = json.dumps(asdict(rs), separators=(',', ':'))
         return await self._push(self._connections[connection_id].session, data=data)
 
     async def _push(self, connection: 'WebSocketResponse', data: str):
         await connection.send_str(data)
 
-    async def stream(self, connection_id: str) -> typing.AsyncIterable[Event]:
+    async def stream(self, connection_id: str) -> typing.AsyncIterable[JSON_RPC_RQ]:
         async for message in self._connections[connection_id].session:
             await self.refresh_connection(connection_id)
             print(f"input message: {message}")
-            try:
-                data = message.json()  # noqa
-            except:
-                data = {"kind":"insert-kind","payload":"insert-payload"}
-                
-            yield Event(kind=data['kind'], payload=data['payload'])
+            data = message.json()  # noqa
+            yield JSON_RPC_RQ(method=data['method'], params=data['params'], id=data['id'])
 
-    async def broadcast(self, event: Event, except_of: list[str] | None = None):
-        self.logger.info(f'Broadcasting {event} for all except of {except_of}')
+    async def broadcast(self, rs: JSON_RPC_RS, except_of: list[str] | None = None):
+        self.logger.info(f'Broadcasting {rs} for all except of {except_of}')
         ops = []
         for connection_id in self._connections.keys():
             if except_of and connection_id in except_of:
                 continue
-            ops.append(self.push(event=event, connection_id=connection_id))
+            ops.append(self.push(rs=rs, connection_id=connection_id))
         await asyncio.gather(*ops)
 
     async def refresh_connection(self, connection_id: str):

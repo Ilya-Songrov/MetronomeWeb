@@ -109,3 +109,33 @@ onClickButtonSend = (textData) => {
     console.log(`Send textData: ${textData}`);
     connection.push_str(textData);
 }
+
+onClick_GET_ID = () => {
+    data = '{"jsonrpc": "2.0", "method": "get_id", "params": {"time_utc": 123123123}, "id": ' + String(++jsonrpc_id) + '}'
+    document.getElementById('json_text_id_rq').value = data
+    onClickButtonSend(data)
+}
+
+onClick_SUBSCRIBE_TO_GROUP = () => {
+    data = '{"jsonrpc": "2.0", "method": "subscribe_to_group", "params": {"client_id": 111222,"group_id": 111222}, "id": ' + String(++jsonrpc_id) + '}'
+    document.getElementById('json_text_id_rq').value = data
+    onClickButtonSend(data)
+}
+
+onClick_CREATE_GROUP = () => {
+    data = '{"jsonrpc": "2.0", "method": "create_group", "params": {"client_id": 111222}, "id": ' + String(++jsonrpc_id) + '}'
+    document.getElementById('json_text_id_rq').value = data
+    onClickButtonSend(data)
+}
+
+onClick_START_METRONOME = () => {
+    data = '{{"jsonrpc": "2.0", "method": "start_metronome", "params": {"client_id": 111222,"group_id": 111222,"current_client_ts":1662817489000,"bpm":90}, "id": ' + String(++jsonrpc_id) + '}'
+    document.getElementById('json_text_id_rq').value = data
+    onClickButtonSend(data)
+}
+
+onClick_STOP_METRONOME = () => {
+    data = '{"jsonrpc": "2.0", "method": "stop_metronome", "params": {"client_id": 111222,"group_id": 111222,"current_client_ts":1662817489000}, "id": ' + String(++jsonrpc_id) + '}'
+    document.getElementById('json_text_id_rq').value = data
+    onClickButtonSend(data)
+}

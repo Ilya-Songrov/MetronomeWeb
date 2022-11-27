@@ -10,6 +10,7 @@ let run = true;
 let username;
 let id = 'initial-id';
 let latitude, longitude;
+let jsonrpc_id = 0
 
 const MY_COLOR = 'green';
 const OTHER_COLOR = 'red';

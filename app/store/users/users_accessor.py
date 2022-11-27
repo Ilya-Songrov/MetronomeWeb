@@ -1,53 +1,57 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
+from utils.Utils import Utils
 
 from app.base.accessor import BaseAccessor
 
 
 @dataclass
 class User:
-    id: str
+    client_id: int
     name: str
-    latitude: float
-    longitude: float
 
     def __str__(self):
-        return f'User {self.name} ({self.id}: latitude {self.latitude}, longitude: {self.longitude}'
+        return f'User<{self.client_id=},{self.name=}>'
 
 
 class UsersAccessor(BaseAccessor):
     def _init_(self) -> None:
         self._users: dict[str, User] = {}
+        self._client_ids: list[int] = list(range(9999, 0, -1))
 
     async def list_users(self) -> list[User]:
         return list(self._users.values())
 
     async def update_coords(
             self,
-            _id: str,
-            latitude: float,
-            longitude: float,
+            connection_id: str,
     ):
-        self._users[_id].latitude = latitude
-        self._users[_id].longitude = longitude
+        pass
 
     async def add(
             self,
-            _id: str,
+            connection_id: str,
             name: str,
-            latitude: float,
-            longitude: float,
     ) -> User:
+        user = await self.get(connection_id)
+        if user is not None:
+            return user
         user = User(
-            id=_id,
+            client_id= await self._get_free_client_id(),
             name=name,
-            latitude=latitude,
-            longitude=longitude,
         )
-        self._users[_id] = user
+        self._users[connection_id] = user
         return user
 
-    async def remove(self, _id: str) -> None:
-        self._users.pop(_id)
+    async def remove(self, connection_id: str) -> None:
+        user = await self.get(connection_id)
+        self._client_ids.append(user.client_id)
+        self._users.pop(connection_id)
 
-    async def get(self, _id: str) -> User:
-        return self._users[_id]
+    async def get(self, connection_id: str) -> User | None:
+        return self._users.get(connection_id, None)
+    
+    async def _get_free_client_id(self) -> int:
+        try:
+            return self._client_ids.pop()
+        except:
+            return Utils.getCurrentTimestampMs()
