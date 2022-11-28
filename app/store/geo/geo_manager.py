@@ -34,17 +34,17 @@ class GeoManager(BaseManager):
         #     args=[connection_id],
         # )
         async for rq in self.store.ws_accessor.stream(connection_id):
-            should_continue = await self._handle_rq(rq, connection_id)
+            should_continue = await self._handleRQ(rq, connection_id)
             if not should_continue:
                 break
 
-    async def _handle_rq(self, rq: JSON_RPC_RQ, connection_id: str) -> bool:
+    async def _handleRQ(self, rq: JSON_RPC_RQ, connection_id: str) -> bool:
+        rs: JSON_RPC_RS = JSON_RPC_RS(result={"status":"error","message":"request error"}, id=rq.id)
         if rq.method == GeoClientMethod.GET_ID:
-            user = await self.store.users_accessor.add(
+            user = await self.store.users_accessor.addUser(
                 connection_id=connection_id,
                 name="default-name",
             )
-            self.logger.info(f'New user saving: {user}')
             rs = JSON_RPC_RS(
                 result={
                     "status": "success",
@@ -52,33 +52,23 @@ class GeoManager(BaseManager):
                 },
                 id=rq.id,
             )
-            await self.store.ws_accessor.push(rs, connection_id=connection_id)
-            return True
         elif rq.method == GeoClientMethod.CREATE_GROUP:
-            user = await self.store.users_accessor.add(
-                connection_id=connection_id,
-                name="default-name",
-            )
-            self.logger.info(f'New user connected: {user}')
-            payload = asdict(user)
-            payload['id'] = connection_id
-            rs = JSON_RPC_RS(
-                # kind=GeoClientMethod.ADD,
-                result=payload,
-                id=rq.id,
-            )
-            await self.store.ws_accessor.broadcast(
-                rs,
-                except_of=[connection_id],
-            )
-            return True
+            user = await self.store.users_accessor.getUser(connection_id=connection_id)
+            if user is not None:
+                group = await self.store.groupAccessor.createGroup(userOwner=user)
+                rs = JSON_RPC_RS(
+                    result={
+                        "status": "success",
+                        "group_id": group.userOwner.client_id,
+                    },
+                    id=rq.id,
+                )
         elif rq.method == GeoClientMethod.SUBSCRIBE_TO_GROUP:
-            user = await self.store.users_accessor.get(connection_id=connection_id)
-            self.logger.info(f'User {user} disconnected')
-            await self.on_user_disconnect(connection_id)
-            return True
+            user = await self.store.users_accessor.getUser(connection_id=connection_id)
+            if user is not None:
+                await self.store.groupAccessor.addUserToGroup(user, group_id=rq.params['gropu_id'])
         elif rq.method == GeoClientMethod.PING:
-            user = await self.store.users_accessor.get(connection_id)
+            user = await self.store.users_accessor.getUser(connection_id)
             latitude = rq.params['latitude']
             longitude = rq.params['longitude']
 
@@ -95,18 +85,18 @@ class GeoManager(BaseManager):
                     ),
                     except_of=[connection_id],
                 )
-                await self.store.users_accessor.update_coords(
-                    connection_id=user.client_id,
-                    latitude=latitude,
-                    longitude=longitude,
-                )
-            return True
-        elif rq.method == GeoClientMethod.UPDATE_TEMP:
-            await self._send_test_data(connection_id)
-            return True
+                # await self.store.users_accessor.update_coords(
+                #     connection_id=user.client_id,
+                #     latitude=latitude,
+                #     longitude=longitude,
+                # )
         else:
             raise NotImplementedError
 
+        await self.store.ws_accessor.push(rs=rs, connection_id=connection_id)
+        return True
+
+            
     async def _send_initial_rs(self, connection_id: str):
         rs: json = {"status":"success"}
         rs = JSON_RPC_RS(
@@ -127,7 +117,7 @@ class GeoManager(BaseManager):
         await self.store.ws_accessor.push(rs, connection_id=connection_id)
 
     async def on_user_disconnect(self, connection_id: str) -> None:
-        await self.store.users_accessor.remove(connection_id)
+        await self.store.users_accessor.removeUser(connection_id)
         await self.store.ws_accessor.broadcast(
             rs=JSON_RPC_RS(
                 result={

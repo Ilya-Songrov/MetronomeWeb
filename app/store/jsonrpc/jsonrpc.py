@@ -19,3 +19,4 @@ class JSON_RPC_RS(JSON_RPC_BASE):
 
     def __str__(self):
         return f'JSON_RPC_RS<{self.jsonrpc=},{self.result=},{self.id}>'
+    

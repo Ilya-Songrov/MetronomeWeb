@@ -2,6 +2,7 @@ import typing
 
 from app.store.geo.geo_manager import GeoManager
 from app.store.users.users_accessor import UsersAccessor
+from app.store.Groups.GroupsAccessor import GroupsAccessor
 from app.store.ws.ws_accessor import WSAccessor
 
 if typing.TYPE_CHECKING:
@@ -14,3 +15,4 @@ class Store:
         self.ws_accessor = WSAccessor(self)
         self.geo_manager = GeoManager(self)
         self.users_accessor = UsersAccessor(self)
+        self.groupAccessor = GroupsAccessor(self)

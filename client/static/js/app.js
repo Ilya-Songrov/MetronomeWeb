@@ -116,14 +116,14 @@ onClick_GET_ID = () => {
     onClickButtonSend(data)
 }
 
-onClick_SUBSCRIBE_TO_GROUP = () => {
-    data = '{"jsonrpc": "2.0", "method": "subscribe_to_group", "params": {"client_id": 111222,"group_id": 111222}, "id": ' + String(++jsonrpc_id) + '}'
+onClick_CREATE_GROUP = () => {
+    data = '{"jsonrpc": "2.0", "method": "create_group", "params": {"time_utc": 123123123}, "id": ' + String(++jsonrpc_id) + '}'
     document.getElementById('json_text_id_rq').value = data
     onClickButtonSend(data)
 }
 
-onClick_CREATE_GROUP = () => {
-    data = '{"jsonrpc": "2.0", "method": "create_group", "params": {"client_id": 111222}, "id": ' + String(++jsonrpc_id) + '}'
+onClick_SUBSCRIBE_TO_GROUP = () => {
+    data = '{"jsonrpc": "2.0", "method": "subscribe_to_group", "params": {"client_id": 111222,"group_id": 111222}, "id": ' + String(++jsonrpc_id) + '}'
     document.getElementById('json_text_id_rq').value = data
     onClickButtonSend(data)
 }
