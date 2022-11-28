@@ -20,5 +20,5 @@ def create_app() -> Application:
 
 if __name__ == '__main__':
     print("test1")
-    web.run_app(create_app(), port=8000)
+    web.run_app(create_app(), host='192.168.0.106', port=8000)
     print("test2")

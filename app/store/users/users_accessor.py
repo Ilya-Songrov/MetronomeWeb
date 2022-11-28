@@ -6,11 +6,12 @@ from app.base.accessor import BaseAccessor
 
 @dataclass
 class User:
+    connection_id: str
     client_id: int
     name: str
 
     def __str__(self):
-        return f'User<{self.client_id=},{self.name=}>'
+        return f'User<{self.connection_id=},{self.client_id=},{self.name=}>'
 
 
 class UsersAccessor(BaseAccessor):
@@ -24,7 +25,7 @@ class UsersAccessor(BaseAccessor):
     async def addUser(self, connection_id: str, name: str) -> User:
         user = await self.getUser(connection_id)
         if user is None:
-            user = User(client_id= await self._getFreeClientId(),name=name)
+            user = User(connection_id=connection_id,client_id= await self._getFreeClientId(),name=name)
             self.logger.info(f'Add new {user=}')
             self._users[connection_id] = user
         return user

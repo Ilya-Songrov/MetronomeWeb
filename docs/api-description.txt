@@ -17,20 +17,27 @@
 <-- {"jsonrpc": "2.0", "result": {"status":"success/error","group_id": 111222}, "id": 1}
 
 # SUBSCRIBE_TO_GROUP
---> {"jsonrpc": "2.0", "method": "subscribe_to_group", "params": {"client_id": 222333,"group_id": 111222}, "id": 1}
+--> {"jsonrpc": "2.0", "method": "subscribe_to_group", "params": {"group_id": 111222}, "id": 1}
 <-- {"jsonrpc": "2.0", "result": {"status":"success/error","message":"group is not exist"}, "id": 1}
 
 # START_METRONOME
---> {"jsonrpc": "2.0", "method": "start_metronome", "params": {"client_id": 111222,"group_id": 111222,"current_client_ts":1662817489000,"bpm":90}, "id": 1}
+--> {"jsonrpc": "2.0", "method": "start_metronome", "params": {"group_id": 111222,"current_client_ts":1662817489000,"bpm":90}, "id": 1}
+<-- {"jsonrpc": "2.0", "result": {"status":"success/error","message":"description"}, "id": 1}
+
+# UPDATE_TEMP
+--> {"jsonrpc": "2.0", "method": "update_temp", "params": {"group_id": 111222,"current_client_ts":1662817489000,"bpm":90}, "id": 1}
 <-- {"jsonrpc": "2.0", "result": {"status":"success/error","message":"description"}, "id": 1}
 
 # STOP_METRONOME
---> {"jsonrpc": "2.0", "method": "stop_metronome", "params": {"client_id": 111222,"group_id": 111222,"current_client_ts":1662817489000}, "id": 1}
+--> {"jsonrpc": "2.0", "method": "stop_metronome", "params": {"group_id": 111222,"current_client_ts":1662817489000}, "id": 1}
 <-- {"jsonrpc": "2.0", "result": {"status":"success/error","message":"description"}, "id": 1}
 
 
 ###### server to client
-# UPDATE_TEMP
---> {"jsonrpc": "2.0", "method": "update_temp", "params": {"start_ts":1662817489000,"bpm":120}, "id": 1}
+# PLAY_SOUND
+--> {"jsonrpc": "2.0", "method": "play_sound", "params": {"start_ts":1662817489000,"bpm":120}, "id": 1}
 <-- {"jsonrpc": "2.0", "result": {"status":"success/error","message":"description"}, "id": 1}
 
+# STOP_SOUND
+--> {"jsonrpc": "2.0", "method": "stop_sound", "params": null, "id": 1}
+<-- {"jsonrpc": "2.0", "result": {"status":"success/error","message":"description"}, "id": 1}

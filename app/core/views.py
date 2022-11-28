@@ -34,9 +34,9 @@ class IndexViewIcon(View):
 class WSConnectView(View):
     async def get(self):
         async with WSContext(
-                accessor=self.store.ws_accessor,
+                accessor=self.store.wsAccessor,
                 request=self.request,
-                close_callback=self.store.geo_manager.on_user_disconnect,
+                close_callback=self.store.geoManager.on_user_disconnect,
         ) as connection_id:
-            await self.store.geo_manager.handle(connection_id)
+            await self.store.geoManager.handle(connection_id)
         return

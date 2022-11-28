@@ -7,7 +7,10 @@ from app.store.users.users_accessor import User
 @dataclass
 class Group:
     userOwner: 'User'
-    subscribedUsers: list['User'] = field(default_factory=list)
+    subscribedUsers: list['User']   = field(default_factory=list)
+    metronomeIsRunning: bool        = False
+    metronomeBpm: int               = -1
+
 
     def __str__(self):
         return f'Group<{self.userOwner=},{self.subscribedUsers=}>'
@@ -28,17 +31,25 @@ class GroupsAccessor(BaseAccessor):
             self._groups[userOwner.client_id] = group
         return group
     
-    async def addUserToGroup(self, user: 'User', group_id: int):
+    async def addUserToGroup(self, user: 'User', group_id: int) -> Group:
         group = await self.getGroup(group_id)
         if group is not None and user not in group.subscribedUsers:
             self.logger.info(f'Add {user=} to {group=}')
             group.subscribedUsers.append(user)
+        return group
 
     async def removeUserFromGroup(self, user: 'User', group_id: int):
         group = await self.getGroup(group_id)
         if group is not None and user in group.subscribedUsers:
             self.logger.info(f'Remove {user=} from {group=}')
             group.subscribedUsers.remove(user)
+
+    async def removeUserFromAllGroups(self, user: 'User'):
+        for group in self._groups.values():
+            if user in group.subscribedUsers:
+                self.logger.info(f'Remove {user=} from {group=}')
+                group.subscribedUsers.remove(user)
+                continue
 
     async def removeGroup(self, group_id: int) -> None:
         self._groups.pop(group_id)

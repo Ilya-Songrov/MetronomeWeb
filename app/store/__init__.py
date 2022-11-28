@@ -12,7 +12,7 @@ if typing.TYPE_CHECKING:
 class Store:
     def __init__(self, app: "Application"):
         self.app = app
-        self.ws_accessor = WSAccessor(self)
-        self.geo_manager = GeoManager(self)
-        self.users_accessor = UsersAccessor(self)
-        self.groupAccessor = GroupsAccessor(self)
+        self.wsAccessor     = WSAccessor(self)
+        self.geoManager     = GeoManager(self)
+        self.usersAccessor  = UsersAccessor(self)
+        self.groupAccessor  = GroupsAccessor(self)

@@ -7,7 +7,7 @@ from dataclasses import dataclass, asdict
 
 from aiohttp.web_ws import WebSocketResponse
 
-from app.store.jsonrpc.jsonrpc import JSON_RPC_RQ, JSON_RPC_RS  
+from app.store.jsonrpc.jsonrpc import JSON_RPC_BASE, JSON_RPC_RQ, JSON_RPC_RS
 from app.base.accessor import BaseAccessor
 from app.base.utils import do_by_timeout_wrapper
 
@@ -105,28 +105,30 @@ class WSAccessor(BaseAccessor):
         if not connection.session.closed:
             await connection.session.close()
 
-    async def push(self, rs: JSON_RPC_RQ, connection_id: str):
-        data = json.dumps(asdict(rs), separators=(',', ':'))
+    async def push(self, data: JSON_RPC_BASE, connection_id: str):
+        self.logger.info(f'Push {data=} to {connection_id=}')
+        data = json.dumps(asdict(data), separators=(',', ':'))
         return await self._push(self._connections[connection_id].session, data=data)
 
     async def _push(self, connection: 'WebSocketResponse', data: str):
         await connection.send_str(data)
 
+    async def broadcast(self, data: JSON_RPC_BASE, connection_ids: list[str]):
+        self.logger.info(f'Broadcasting {data=} for all {connection_ids=}')
+        ops = []
+        for connection_id in connection_ids:
+            ops.append(self.push(data=data, connection_id=connection_id))
+        await asyncio.gather(*ops)
+
     async def stream(self, connection_id: str) -> typing.AsyncIterable[JSON_RPC_RQ]:
         async for message in self._connections[connection_id].session:
             await self.refresh_connection(connection_id)
-            print(f"input message: {message}")
-            data = message.json()  # noqa
-            yield JSON_RPC_RQ(method=data['method'], params=data['params'], id=data['id'])
-
-    async def broadcast(self, rs: JSON_RPC_RS, except_of: list[str] | None = None):
-        self.logger.info(f'Broadcasting {rs} for all except of {except_of}')
-        ops = []
-        for connection_id in self._connections.keys():
-            if except_of and connection_id in except_of:
-                continue
-            ops.append(self.push(rs=rs, connection_id=connection_id))
-        await asyncio.gather(*ops)
+            self.logger.info(f"Input {message=}")
+            data: json = message.json()  # noqa
+            if 'method' in data:
+                yield JSON_RPC_RQ(method=data['method'], params=data['params'], id=data['id'], jsonrpc=data['jsonrpc'])
+            else:
+                yield JSON_RPC_RS(result=data['result'], id=data['id'], jsonrpc=data['jsonrpc'])
 
     async def refresh_connection(self, connection_id: str):
         self._connections[connection_id].timeout_task.cancel()
