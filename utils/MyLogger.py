@@ -10,7 +10,7 @@ class MyLogger:
     def createLoggerConfigs(self, log_dir_to_save: str) -> 'logging.Logger':
         Path(log_dir_to_save).mkdir(parents=True, exist_ok=True)
         logger = logging.getLogger()
-        logger.setLevel(logging.INFO)
+        logger.setLevel(logging.debug)
         formatter = logging.Formatter(fmt='[%(asctime)s %(levelname)s] {%(pathname)s:%(lineno)d} [p%(process)s]: %(message)s')
 
         stdout_handler = logging.StreamHandler(sys.stdout)

@@ -33,9 +33,11 @@ onError = (e) => {
 }
 
 onMessage = (msg) => {
+    onMessageTsMs = Date.now()
+    console.log(`__onMessageTsMs: ${onMessageTsMs}`)
     console.log(`onMessage msg.data: ${msg.data}`);
     let data = JSON.parse(msg.data);
-    document.getElementById('json_text_id_rs').value = msg.data
+    document.getElementById('server_writing_id').value = msg.data
     if(data.hasOwnProperty('result')) {
         onMessageRS(data)
     }
@@ -47,10 +49,12 @@ onMessage = (msg) => {
 onMessageRS = (data) => {
     let result = data['result']
     let status = result['status']
+    setColorOnServerWriting(status === "success" ? "transparent" : "red")
 }
 
 onMessageRQ = (data) => {
-    method = data['method']
+    let method = data['method']
+    let id = data['id']
     if(method === PLAY_SOUND){
         let params = data['params']
         let start_ts = params['start_ts']
@@ -60,10 +64,20 @@ onMessageRQ = (data) => {
         let myTimeout = 2000
         let timeout = setTimeout(onClickButtonAudioStart, myTimeout)
         console.log(`myTimeout: ${myTimeout}, timeout: ${timeout}`);
+        sendDataToServer(`{"jsonrpc": "2.0", "result": {"status":"success"}, "id": ${id}}`)
+    }
+    else if(method === GET_TIME){
+        sendDataToServer(`{"jsonrpc": "2.0", "result": {"status":"success","ts_ms":${onMessageTsMs}}, "id": ${id}}`)
     }
     else if(method === STOP_SOUND){
         onClickButtonAudioStop()
+        sendDataToServer(`{"jsonrpc": "2.0", "result": {"status":"success"}, "id": ${id}}`)
     }
+    setColorOnServerWriting("transparent")
+}
+
+setColorOnServerWriting = (color) => {
+    document.getElementById('server_writing_id').style.backgroundColor = color
 }
 
 onFullyConnected = (payload) => {
@@ -100,39 +114,35 @@ onClickButtonAudioStop = () => {
     audio.currentTime = 0;
 }
 
-onClickButtonSend = (textData) => {
-    console.log(`Send textData: ${textData}`);
+sendDataToServer = (textData) => {
     connection.push_str(textData);
+    console.log(`Send textData: ${textData}`)
+    document.getElementById('client_writing_id').value = textData
 }
 
 onClick_GET_ID = () => {
     data = '{"jsonrpc": "2.0", "method": "get_id", "params": {"time_utc": 123123123}, "id": ' + String(++jsonrpc_id) + '}'
-    document.getElementById('json_text_id_rq').value = data
-    onClickButtonSend(data)
+    sendDataToServer(data)
 }
 
 onClick_CREATE_GROUP = () => {
     data = '{"jsonrpc": "2.0", "method": "create_group", "params": {"time_utc": 123123123}, "id": ' + String(++jsonrpc_id) + '}'
-    document.getElementById('json_text_id_rq').value = data
-    onClickButtonSend(data)
+    sendDataToServer(data)
 }
 
 onClick_SUBSCRIBE_TO_GROUP = () => {
     data = '{"jsonrpc": "2.0", "method": "subscribe_to_group", "params": {"client_id": 111222,"group_id": 1}, "id": ' + String(++jsonrpc_id) + '}'
-    document.getElementById('json_text_id_rq').value = data
-    onClickButtonSend(data)
+    sendDataToServer(data)
 }
 
 onClick_START_METRONOME = () => {
     data = '{"jsonrpc": "2.0", "method": "start_metronome", "params": {"client_id": 111222,"group_id": 111222,"current_client_ts":1662817489000,"bpm":90}, "id": ' + String(++jsonrpc_id) + '}'
-    document.getElementById('json_text_id_rq').value = data
-    onClickButtonSend(data)
+    sendDataToServer(data)
 }
 
 onClick_STOP_METRONOME = () => {
     data = '{"jsonrpc": "2.0", "method": "stop_metronome", "params": {"client_id": 111222,"group_id": 111222,"current_client_ts":1662817489000}, "id": ' + String(++jsonrpc_id) + '}'
-    document.getElementById('json_text_id_rq').value = data
-    onClickButtonSend(data)
+    sendDataToServer(data)
 }
 
 (()=>{

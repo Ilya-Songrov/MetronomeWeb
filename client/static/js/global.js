@@ -1,11 +1,9 @@
 // globals
 let connection;
 let audio;
-// let map;
+let onMessageTsMs;
 let path;
 let run = true;
-// let generateLocationButton = document.getElementById('generate-location')
-// let useFakeLocation = false;
 
 // user
 let username;
@@ -29,6 +27,7 @@ const DISCONNECT              = 'disconnect'
 const PING                    = 'ping'
 
 // server methods
+const GET_TIME                = 'get_time';
 const PLAY_SOUND              = 'play_sound';
 const STOP_SOUND              = 'stop_sound';
 

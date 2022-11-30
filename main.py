@@ -11,7 +11,7 @@ from app.store import Store
 def create_app() -> Application:
     app = web.Application()
     # logging.basicConfig(level=logging.INFO)
-    logging.basicConfig(level=logging.INFO, format='[%(asctime)s %(levelname)s] {%(pathname)s:%(lineno)d} [p%(process)s]: %(message)s')
+    logging.basicConfig(level=logging.DEBUG, format='[%(asctime)s %(levelname)s] {%(pathname)s:%(lineno)d} [p%(process)s]: %(message)s')
     app.logger = getLogger()
     app.store = Store(app)
     setup_routes(app)

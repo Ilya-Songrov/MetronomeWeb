@@ -15,18 +15,18 @@
       <button style="background-color:rgba(97, 11, 78, 0.158); width: 20%; height: 40px;" onclick="onClickButtonAudioStart()">start</button>
       <button style="background-color:rgba(97, 11, 78, 0.158); width: 20%; height: 40px;" onclick="onClickButtonAudioStop()">stop</button>
     </div>
-    <label for="json_text_id_rq">Client RQ:</label>
-    <textarea id="json_text_id_rq" name="json_text_name_rq" rows="5" cols="33" placeholder="Json params" style="width:100%"></textarea>
+    <label for="client_writing_id">CLIENT_WRITING:</label>
+    <textarea id="client_writing_id" name="json_text_name_rq" rows="5" cols="33" placeholder="Json params" style="width:100%"></textarea>
     <div class="btn-group">
-      <button style="background-color:rgba(19, 110, 46, 0.158); height: 40px;" onclick="onClick_GET_ID()">GET_ID</button>
-      <button style="background-color:rgba(19, 110, 46, 0.158); height: 40px;" onclick="onClick_CREATE_GROUP()">CREATE_GROUP</button>
-      <button style="background-color:rgba(19, 110, 46, 0.158); height: 40px;" onclick="onClick_SUBSCRIBE_TO_GROUP()">SUBSCRIBE_TO_GROUP</button>
-      <button style="background-color:rgba(19, 110, 46, 0.158); height: 40px;" onclick="onClick_START_METRONOME()">START_METRONOME</button>
-      <button style="background-color:rgba(19, 110, 46, 0.158); height: 40px;" onclick="onClick_STOP_METRONOME()">STOP_METRONOME</button>
-      <button style="background-color:rgb(146, 162, 233);float:right;margin:auto;display:block" onclick="onClickButtonSend(document.getElementById('json_text_id_rq').value)">Send</button>
+      <button style="background-color:rgba(19, 110, 46, 0.158); height: 140px;" onclick="onClick_GET_ID()">GET_ID</button>
+      <button style="background-color:rgba(19, 110, 46, 0.158); height: 140px;" onclick="onClick_CREATE_GROUP()">CREATE_GROUP</button>
+      <button style="background-color:rgba(19, 110, 46, 0.158); height: 140px;" onclick="onClick_SUBSCRIBE_TO_GROUP()">SUBSCRIBE_TO_GROUP</button>
+      <button style="background-color:rgba(19, 110, 46, 0.158); height: 140px;" onclick="onClick_START_METRONOME()">START_METRONOME</button>
+      <button style="background-color:rgba(19, 110, 46, 0.158); height: 140px;" onclick="onClick_STOP_METRONOME()">STOP_METRONOME</button>
+      <button style="background-color:rgba(8, 17, 56, 0.60000); height: 140px;float:right;margin:auto;display:block" onclick="sendDataToServer(document.getElementById('client_writing_id').value)">Send</button>
     </div>
-    <label for="json_text_id_rs">Server RS:</label>
-    <textarea id="json_text_id_rs" name="json_text_name_rs" rows="5" cols="33" placeholder="Json params" style="width:100%"></textarea>
+    <label for="server_writing_id">SERVER_WRITING:</label>
+    <textarea id="server_writing_id" name="json_text_name_rs" rows="5" cols="33" placeholder="Json params" style="width:100%;background-color:none" ></textarea>
     <label for="log_text_id">Custom-Logger:</label>
     <textarea id="log_text_id" name="log_text_name" rows="5" cols="33" placeholder="log" style="width:100%;height:220px;"></textarea>
     <label for="api_description_id">API-DESCRIPTION:</label>

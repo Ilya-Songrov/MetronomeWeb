@@ -27,27 +27,27 @@ class GroupsAccessor(BaseAccessor):
         group = await self.getGroup(userOwner.client_id)
         if group is None:
             group = Group(userOwner=userOwner)
-            self.logger.info(f'Create new {group=}')
+            self.logger.debug(f'Create new {group=}')
             self._groups[userOwner.client_id] = group
         return group
     
     async def addUserToGroup(self, user: 'User', group_id: int) -> Group:
         group = await self.getGroup(group_id)
         if group is not None and user not in group.subscribedUsers:
-            self.logger.info(f'Add {user=} to {group=}')
+            self.logger.debug(f'Add {user=} to {group=}')
             group.subscribedUsers.append(user)
         return group
 
     async def removeUserFromGroup(self, user: 'User', group_id: int):
         group = await self.getGroup(group_id)
         if group is not None and user in group.subscribedUsers:
-            self.logger.info(f'Remove {user=} from {group=}')
+            self.logger.debug(f'Remove {user=} from {group=}')
             group.subscribedUsers.remove(user)
 
     async def removeUserFromAllGroups(self, user: 'User'):
         for group in self._groups.values():
             if user in group.subscribedUsers:
-                self.logger.info(f'Remove {user=} from {group=}')
+                self.logger.debug(f'Remove {user=} from {group=}')
                 group.subscribedUsers.remove(user)
                 continue
 

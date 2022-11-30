@@ -1,4 +1,5 @@
 import json
+import typing
 from dataclasses import asdict
 from datetime import datetime
 
@@ -9,7 +10,6 @@ from app.base.utils import do_by_timeout_wrapper
 from app.store.jsonrpc.jsonrpc import JSON_RPC_BASE, JSON_RPC_RQ, JSON_RPC_RS  
 
 class GeoClientMethod:
-    INITIAL                 = 'initial'
     GET_ID                  = 'get_id'
     CREATE_GROUP            = 'create_group'
     SUBSCRIBE_TO_GROUP      = 'subscribe_to_group'
@@ -20,6 +20,7 @@ class GeoClientMethod:
     PING                    = 'ping'
 
 class GeoServerMethod:
+    GET_TIME                = 'get_time'
     PLAY_SOUND              = 'play_sound'
     STOP_SOUND              = 'stop_sound'
     
@@ -31,8 +32,14 @@ class GeoManager(BaseManager):
 
     MAX_ERROR = 0.05
 
+    def _init_(self) -> None:
+        self._callbacksOnClientRS: dict[int, typing.Callable[['JSON_RPC_RS', str], typing.Awaitable]] = {}
+        self._calcDifferenceInTsMs: dict[str, int] = {}
+
     async def handle(self, connection_id: str):
-        await self._sendInitialData(connection_id)
+        self._calcDifferenceInTsMs[connection_id] = Utils.getCurrentTimestampMs()
+        await self.store.usersAccessor.addUser(connection_id=connection_id)
+        await self._sendRQ_GET_TIME(connection_id)
         async for data in self.store.wsAccessor.stream(connection_id):
             should_continue = await self._handleInputData(data, connection_id)
             if not should_continue:
@@ -47,17 +54,15 @@ class GeoManager(BaseManager):
     async def _handleRQ(self, rq: JSON_RPC_RQ, connection_id: str) -> bool:
         rs: JSON_RPC_RS = JSON_RPC_RS(result={"status":"error","message":"request error"}, id=rq.id)
         if rq.method == GeoClientMethod.GET_ID:
-            user = await self.store.usersAccessor.addUser(
-                connection_id=connection_id,
-                name="default-name",
-            )
-            rs = JSON_RPC_RS(
-                result={
-                    "status": "success",
-                    "client_id": user.client_id,
-                },
-                id=rq.id,
-            )
+            user = await self.store.usersAccessor.getUser(connection_id=connection_id)
+            if user is not None:
+                rs = JSON_RPC_RS(
+                    result={
+                        "status": "success",
+                        "client_id": user.client_id,
+                    },
+                    id=rq.id,
+                )
         elif rq.method == GeoClientMethod.CREATE_GROUP:
             user = await self.store.usersAccessor.getUser(connection_id=connection_id)
             if user is not None:
@@ -90,20 +95,26 @@ class GeoManager(BaseManager):
                 )
                 await self.store.wsAccessor.push(data=rs, connection_id=connection_id)
 
-                listUsersToSend = [user.connection_id]
-                rqToGroup = JSON_RPC_RQ(
+                listIdData: list[tuple[JSON_RPC_BASE,str]] = []
+                rqUser = JSON_RPC_RQ(
                     method=GeoServerMethod.PLAY_SOUND,
-                    params={"start_ts":Utils.getCurrentTimestampMs()+2000,"bpm":120},
-                    id=Utils.getCurrentTimestampMs(),
+                    params={"start_ts":Utils.getCurrentTimestampMs()+2000-user.differenceInTsMs,"bpm":120},
+                    id=Utils.getNextId(),
                 )
+                listIdData.append([rqUser, user.connection_id])
                 group = await self.store.groupAccessor.getGroup(group_id=user.client_id)
                 if group is not None:
                     for user in group.subscribedUsers:
-                        listUsersToSend.append(user.connection_id)
-                await self.store.wsAccessor.broadcast(rqToGroup,listUsersToSend)
+                        rqUser = JSON_RPC_RQ(
+                            method=GeoServerMethod.PLAY_SOUND,
+                            params={"start_ts":Utils.getCurrentTimestampMs()+2000-user.differenceInTsMs,"bpm":120},
+                            id=Utils.getNextId(),
+                        )
+                        listIdData.append([rqUser, user.connection_id])
+                await self.store.wsAccessor.broadcast(id_data=listIdData)
             return True
         elif rq.method == GeoClientMethod.UPDATE_TEMP:
-            await self._send_test_data(connection_id)
+            await self._sendTestDataRS(connection_id)
         elif rq.method == GeoClientMethod.STOP_METRONOME:
             user = await self.store.usersAccessor.getUser(connection_id=connection_id)
             if user is not None:
@@ -115,17 +126,18 @@ class GeoManager(BaseManager):
                 )
                 await self.store.wsAccessor.push(data=rs, connection_id=connection_id)
 
-                listUsersToSend = [user.connection_id]
-                rqToGroup = JSON_RPC_RQ(
+                listIdData: list[tuple[JSON_RPC_BASE,str]] = []
+                rqUser = JSON_RPC_RQ(
                     method=GeoServerMethod.STOP_SOUND,
                     params=None,
-                    id=Utils.getCurrentTimestampMs(),
+                    id=Utils.getNextId(),
                 )
+                listIdData.append([rqUser, user.connection_id])
                 group = await self.store.groupAccessor.getGroup(group_id=user.client_id)
                 if group is not None:
                     for user in group.subscribedUsers:
-                        listUsersToSend.append(user.connection_id)
-                await self.store.wsAccessor.broadcast(rqToGroup,listUsersToSend)
+                        listIdData.append([rqUser, user.connection_id])
+                await self.store.wsAccessor.broadcast(id_data=listIdData)
             return True
         else:
             raise NotImplementedError
@@ -134,17 +146,36 @@ class GeoManager(BaseManager):
         return True
 
     async def _handleRS(self, rs: JSON_RPC_RS, connection_id: str) -> bool:
-        self.logger.info(f'_handleRS {rs=}, {connection_id=}')
-            
-    async def _sendInitialData(self, connection_id: str):
-        rs: json = {"status":"success"}
-        rs = JSON_RPC_RS(
-            result=rs,
-            id=None,
-        )
-        await self.store.wsAccessor.push(rs, connection_id=connection_id)
+        callback = self._callbacksOnClientRS.get(rs.id, None)
+        if callback is not None:
+            await callback(rs, connection_id)
+            self._callbacksOnClientRS.pop(rs.id)
+        else:
+            self.logger.debug(f'Hending RS without callback. {rs=}, {connection_id=}')
+        return True
 
-    async def _send_test_data(self, connection_id: str):
+    async def _sendRQ_GET_TIME(self, connection_id: str):
+        self.logger.info(f'_sendRQ_GET_TIME {Utils.getCurrentTimestampMs()=}')
+        rq = JSON_RPC_RQ(
+            method=GeoServerMethod.GET_TIME,
+            params=None,
+            id=Utils.getNextId(),
+        )
+        await self._sendRQToClient(rq=rq, connection_id=connection_id, callbackOnRS=self._parseRS_GET_TIME)
+
+    async def _parseRS_GET_TIME(self, rs: JSON_RPC_RS, connection_id: str):
+        self.logger.info(f'{Utils.getCurrentTimestampMs()=}')
+        currentTsMs: int = Utils.getCurrentTimestampMs()
+        startRQTsMs: int = self._calcDifferenceInTsMs.get(connection_id, 0)
+        clientTsMs: int = rs.result.get("ts_ms", 0)
+        differenceInTsMs: int = currentTsMs - ((currentTsMs - startRQTsMs) / 2) - clientTsMs
+        user = await self.store.usersAccessor.getUser(connection_id)
+        if user.client_id == 1:
+            self.logger.info(f'differenceInTsMs += 50 {self.store.usersAccessor.getDifferenceInTsMs(connection_id)=}')
+            # differenceInTsMs += 50
+        await self.store.usersAccessor.setDifferenceInTsMs(connection_id=connection_id, differenceInTsMs=differenceInTsMs)
+
+    async def _sendTestDataRS(self, connection_id: str):
         rs = JSON_RPC_RS(
             result={
                 "timestamp": f"{datetime.now().timestamp()}"
@@ -155,7 +186,8 @@ class GeoManager(BaseManager):
         )
         await self.store.wsAccessor.push(rs, connection_id=connection_id)
 
-    async def _sendRQToClient(self, rq: JSON_RPC_RQ, connection_id: str):
+    async def _sendRQToClient(self, rq: JSON_RPC_RQ, connection_id: str, callbackOnRS: typing.Callable[[str], typing.Awaitable]):
+        self._callbacksOnClientRS[rq.id] = callbackOnRS
         await self.store.wsAccessor.push(data=rq, connection_id=connection_id)
 
     async def on_user_disconnect(self, connection_id: str) -> None:

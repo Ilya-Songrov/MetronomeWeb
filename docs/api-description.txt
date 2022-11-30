@@ -34,6 +34,10 @@
 
 
 ###### server to client
+# GET_TIME
+--> {"jsonrpc": "2.0", "method": "get_time", "params": null, "id": 1}
+<-- {"jsonrpc": "2.0", "result": {"status":"success/error","ts_ms":123321,"message":"description"}, "id": 1}
+
 # PLAY_SOUND
 --> {"jsonrpc": "2.0", "method": "play_sound", "params": {"start_ts":1662817489000,"bpm":120}, "id": 1}
 <-- {"jsonrpc": "2.0", "result": {"status":"success/error","message":"description"}, "id": 1}

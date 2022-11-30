@@ -113,14 +113,14 @@ class WSAccessor(BaseAccessor):
     async def _push(self, connection: 'WebSocketResponse', data: str):
         await connection.send_str(data)
 
-    async def broadcast(self, data: JSON_RPC_BASE, connection_ids: list[str]):
-        self.logger.info(f'Broadcasting {data=} for all {connection_ids=}')
+    async def broadcast(self, id_data: list[tuple[JSON_RPC_BASE,str]]):
+        self.logger.info(f'Broadcasting {id_data=}')
         ops = []
-        for connection_id in connection_ids:
-            ops.append(self.push(data=data, connection_id=connection_id))
+        for tupIdData in id_data:
+            ops.append(self.push(data=tupIdData[0], connection_id=tupIdData[1]))
         await asyncio.gather(*ops)
 
-    async def stream(self, connection_id: str) -> typing.AsyncIterable[JSON_RPC_RQ]:
+    async def stream(self, connection_id: str) -> typing.AsyncIterable[JSON_RPC_BASE]:
         async for message in self._connections[connection_id].session:
             await self.refresh_connection(connection_id)
             self.logger.info(f"Input {message=}")
