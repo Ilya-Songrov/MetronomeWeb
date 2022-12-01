@@ -2,9 +2,9 @@ import os
 
 from aiohttp import web
 
-from app import BASE_DIR
-from app.base.application import View
-from app.store.ws.ws_accessor import WSContext
+from App import BASE_DIR
+from App.Base.Application import View
+from App.Store.WS.WSAccessor import WSContext
 
 
 class IndexView(View):
@@ -36,7 +36,7 @@ class WSConnectView(View):
         async with WSContext(
                 accessor=self.store.wsAccessor,
                 request=self.request,
-                close_callback=self.store.geoManager.on_user_disconnect,
+                close_callback=self.store.geoManager.onUserDisconnect,
         ) as connection_id:
             await self.store.geoManager.handle(connection_id)
         return

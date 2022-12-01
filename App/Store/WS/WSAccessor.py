@@ -7,12 +7,12 @@ from dataclasses import dataclass, asdict
 
 from aiohttp.web_ws import WebSocketResponse
 
-from app.store.jsonrpc.jsonrpc import JSON_RPC_BASE, JSON_RPC_RQ, JSON_RPC_RS
-from app.base.accessor import BaseAccessor
-from app.base.utils import do_by_timeout_wrapper
+from App.Store.jsonrpc.jsonrpc import JSON_RPC_BASE, JSON_RPC_RQ, JSON_RPC_RS
+from App.Base.Accessor import BaseAccessor
+from App.Base.Utils import doByTimeoutWrapper
 
 if typing.TYPE_CHECKING:
-    from app.base.application import Request
+    from App.Base.Application import Request
 
 
 
@@ -61,17 +61,18 @@ class WSAccessor(BaseAccessor):
         await ws_response.prepare(request)
         connection_id = str(uuid.uuid4())
 
-        self.logger.info(f'Handling new connection. Generate ID for it: {connection_id=}')
+        self.logger.info(f'Handling new connection. Host: {request.host} '
+                f'Generate ID for it: {connection_id=}')
 
         self._connections[connection_id] = Connection(
             session=ws_response,
-            timeout_task=self._create_timeout_task(connection_id),
+            timeout_task=self._createTimeoutTask(connection_id),
             close_callback=close_callback,
         )
         return connection_id
 
-    def _create_timeout_task(self, connection_id: str) -> Task:
-        def log_timeout(result: Task):
+    def _createTimeoutTask(self, connection_id: str) -> Task:
+        def logTimeout(result: Task):
             try:
                 exc = result.exception()
             except CancelledError:
@@ -83,13 +84,13 @@ class WSAccessor(BaseAccessor):
                 self.logger.info(f'Connection with {connection_id=} was closed by inactivity')
 
         task = asyncio.create_task(
-            do_by_timeout_wrapper(
+            doByTimeoutWrapper(
                 self.close,
                 self.CONNECTION_TIMEOUT_SECONDS,
                 args=[connection_id],
             )
         )
-        task.add_done_callback(log_timeout)
+        task.add_done_callback(logTimeout)
         return task
 
     async def close(self, connection_id: str):
@@ -105,24 +106,24 @@ class WSAccessor(BaseAccessor):
         if not connection.session.closed:
             await connection.session.close()
 
-    async def push(self, data: JSON_RPC_BASE, connection_id: str):
+    async def pushData(self, data: JSON_RPC_BASE, connection_id: str):
         self.logger.info(f'Push {data=} to {connection_id=}')
         data = json.dumps(asdict(data), separators=(',', ':'))
-        return await self._push(self._connections[connection_id].session, data=data)
+        return await self._pushData(self._connections[connection_id].session, data=data)
 
-    async def _push(self, connection: 'WebSocketResponse', data: str):
+    async def _pushData(self, connection: 'WebSocketResponse', data: str):
         await connection.send_str(data)
 
     async def broadcast(self, id_data: list[tuple[JSON_RPC_BASE,str]]):
         self.logger.info(f'Broadcasting {id_data=}')
         ops = []
         for tupIdData in id_data:
-            ops.append(self.push(data=tupIdData[0], connection_id=tupIdData[1]))
+            ops.append(self.pushData(data=tupIdData[0], connection_id=tupIdData[1]))
         await asyncio.gather(*ops)
 
-    async def stream(self, connection_id: str) -> typing.AsyncIterable[JSON_RPC_BASE]:
+    async def streamData(self, connection_id: str) -> typing.AsyncIterable[JSON_RPC_BASE]:
         async for message in self._connections[connection_id].session:
-            await self.refresh_connection(connection_id)
+            await self.refreshConnection(connection_id)
             self.logger.info(f"Input {message=}")
             data: json = message.json()  # noqa
             if 'method' in data:
@@ -130,6 +131,6 @@ class WSAccessor(BaseAccessor):
             else:
                 yield JSON_RPC_RS(result=data['result'], id=data['id'], jsonrpc=data['jsonrpc'])
 
-    async def refresh_connection(self, connection_id: str):
+    async def refreshConnection(self, connection_id: str):
         self._connections[connection_id].timeout_task.cancel()
-        self._connections[connection_id].timeout_task = self._create_timeout_task(connection_id)
+        self._connections[connection_id].timeout_task = self._createTimeoutTask(connection_id)

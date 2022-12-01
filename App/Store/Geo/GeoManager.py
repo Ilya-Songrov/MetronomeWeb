@@ -1,13 +1,12 @@
-import json
 import typing
 from dataclasses import asdict
 from datetime import datetime
 
 from utils.Utils import Utils
-from app.base.accessor import BaseManager
-from app.store.users.users_accessor import User
-from app.base.utils import do_by_timeout_wrapper
-from app.store.jsonrpc.jsonrpc import JSON_RPC_BASE, JSON_RPC_RQ, JSON_RPC_RS  
+from App.Base.Accessor import BaseManager
+from App.Store.Users.UsersAccessor import User
+from App.Base.Utils import doByTimeoutWrapper
+from App.Store.jsonrpc.jsonrpc import JSON_RPC_BASE, JSON_RPC_RQ, JSON_RPC_RS  
 
 class GeoClientMethod:
     GET_ID                  = 'get_id'
@@ -40,7 +39,7 @@ class GeoManager(BaseManager):
         self._calcDifferenceInTsMs[connection_id] = Utils.getCurrentTimestampMs()
         await self.store.usersAccessor.addUser(connection_id=connection_id)
         await self._sendRQ_GET_TIME(connection_id)
-        async for data in self.store.wsAccessor.stream(connection_id):
+        async for data in self.store.wsAccessor.streamData(connection_id):
             should_continue = await self._handleInputData(data, connection_id)
             if not should_continue:
                 break
@@ -81,6 +80,7 @@ class GeoManager(BaseManager):
                 rs = JSON_RPC_RS(
                     result={
                         "status": ("error" if group == None else "success"),
+                        "message": ("group is not exist" if group == None else None),
                     },
                     id=rq.id,
                 )
@@ -93,12 +93,12 @@ class GeoManager(BaseManager):
                     },
                     id=rq.id,
                 )
-                await self.store.wsAccessor.push(data=rs, connection_id=connection_id)
+                await self.store.wsAccessor.pushData(data=rs, connection_id=connection_id)
 
                 listIdData: list[tuple[JSON_RPC_BASE,str]] = []
                 rqUser = JSON_RPC_RQ(
                     method=GeoServerMethod.PLAY_SOUND,
-                    params={"start_ts":Utils.getCurrentTimestampMs()+2000-user.differenceInTsMs,"bpm":120},
+                    params={"start_ts":Utils.getCurrentTimestampMs()+1000-user.differenceInTsMs,"bpm":120},
                     id=Utils.getNextId(),
                 )
                 listIdData.append([rqUser, user.connection_id])
@@ -107,7 +107,7 @@ class GeoManager(BaseManager):
                     for user in group.subscribedUsers:
                         rqUser = JSON_RPC_RQ(
                             method=GeoServerMethod.PLAY_SOUND,
-                            params={"start_ts":Utils.getCurrentTimestampMs()+2000-user.differenceInTsMs,"bpm":120},
+                            params={"start_ts":Utils.getCurrentTimestampMs()+1000-user.differenceInTsMs,"bpm":120},
                             id=Utils.getNextId(),
                         )
                         listIdData.append([rqUser, user.connection_id])
@@ -124,7 +124,7 @@ class GeoManager(BaseManager):
                     },
                     id=rq.id,
                 )
-                await self.store.wsAccessor.push(data=rs, connection_id=connection_id)
+                await self.store.wsAccessor.pushData(data=rs, connection_id=connection_id)
 
                 listIdData: list[tuple[JSON_RPC_BASE,str]] = []
                 rqUser = JSON_RPC_RQ(
@@ -142,7 +142,7 @@ class GeoManager(BaseManager):
         else:
             raise NotImplementedError
 
-        await self.store.wsAccessor.push(data=rs, connection_id=connection_id)
+        await self.store.wsAccessor.pushData(data=rs, connection_id=connection_id)
         return True
 
     async def _handleRS(self, rs: JSON_RPC_RS, connection_id: str) -> bool:
@@ -168,10 +168,10 @@ class GeoManager(BaseManager):
         currentTsMs: int = Utils.getCurrentTimestampMs()
         startRQTsMs: int = self._calcDifferenceInTsMs.get(connection_id, 0)
         clientTsMs: int = rs.result.get("ts_ms", 0)
-        differenceInTsMs: int = currentTsMs - ((currentTsMs - startRQTsMs) / 2) - clientTsMs
+        differenceInTsMs: int = int(currentTsMs - ((currentTsMs - startRQTsMs) / 2) - clientTsMs)
         user = await self.store.usersAccessor.getUser(connection_id)
-        if user.client_id == 1:
-            self.logger.info(f'differenceInTsMs += 50 {self.store.usersAccessor.getDifferenceInTsMs(connection_id)=}')
+        # if user.client_id == 1:
+            # self.logger.info(f'differenceInTsMs += 50 {self.store.usersAccessor.getDifferenceInTsMs(connection_id)=}')
             # differenceInTsMs += 50
         await self.store.usersAccessor.setDifferenceInTsMs(connection_id=connection_id, differenceInTsMs=differenceInTsMs)
 
@@ -184,14 +184,15 @@ class GeoManager(BaseManager):
             },
             id=None,
         )
-        await self.store.wsAccessor.push(rs, connection_id=connection_id)
+        await self.store.wsAccessor.pushData(rs, connection_id=connection_id)
 
     async def _sendRQToClient(self, rq: JSON_RPC_RQ, connection_id: str, callbackOnRS: typing.Callable[[str], typing.Awaitable]):
         self._callbacksOnClientRS[rq.id] = callbackOnRS
-        await self.store.wsAccessor.push(data=rq, connection_id=connection_id)
+        await self.store.wsAccessor.pushData(data=rq, connection_id=connection_id)
 
-    async def on_user_disconnect(self, connection_id: str) -> None:
+    async def onUserDisconnect(self, connection_id: str) -> None:
         user = await self.store.usersAccessor.getUser(connection_id)
-        if user is None:
+        if user is not None:
             await self.store.groupAccessor.removeUserFromAllGroups(user)
             await self.store.usersAccessor.removeUser(connection_id)
+

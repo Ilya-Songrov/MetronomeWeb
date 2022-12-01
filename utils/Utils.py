@@ -7,4 +7,5 @@ class Utils:
         return round(datetime.now().timestamp() * 1000)
 
     def getNextId() -> int:
-        return Utils._id + 1
+        Utils._id += 1
+        return Utils._id

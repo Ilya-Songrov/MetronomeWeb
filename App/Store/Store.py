@@ -1,12 +1,12 @@
 import typing
 
-from app.store.geo.geo_manager import GeoManager
-from app.store.users.users_accessor import UsersAccessor
-from app.store.Groups.GroupsAccessor import GroupsAccessor
-from app.store.ws.ws_accessor import WSAccessor
+from App.Store.Geo.GeoManager import GeoManager
+from App.Store.Users.UsersAccessor import UsersAccessor
+from App.Store.Groups.GroupsAccessor import GroupsAccessor
+from App.Store.WS.WSAccessor import WSAccessor
 
 if typing.TYPE_CHECKING:
-    from app.base.application import Application
+    from App.Base.Application import Application
 
 
 class Store:

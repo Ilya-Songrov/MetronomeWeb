@@ -9,7 +9,9 @@ function createConnection() {
 }
 
 function createAudio() {
-    audio = new Audio('static/metro_145bpm_60min.mp3');
+    // audio = new Audio('static/metro_145bpm_60min.mp3');
+    audio = new Audio('static/metro_60bpm_5min.mp3');
+    audio.currentTime = 0;
 }
 
 onOpen = () => {
@@ -19,7 +21,7 @@ onOpen = () => {
 onClose = () => {
     console.log('ws connection closed');
     connection.push(
-        DISCONNECT_EVENT,
+        DISCONNECT,
         {
             id: id,
         }
@@ -34,8 +36,7 @@ onError = (e) => {
 
 onMessage = (msg) => {
     onMessageTsMs = Date.now()
-    console.log(`__onMessageTsMs: ${onMessageTsMs}`)
-    console.log(`onMessage msg.data: ${msg.data}`);
+    console.log(`onMessage msg.data: ${msg.data}, onMessageTsMs: ${onMessageTsMs}`);
     let data = JSON.parse(msg.data);
     document.getElementById('server_writing_id').value = msg.data
     if(data.hasOwnProperty('result')) {
@@ -58,12 +59,11 @@ onMessageRQ = (data) => {
     if(method === PLAY_SOUND){
         let params = data['params']
         let start_ts = params['start_ts']
-        let dateFromServer = new Date(start_ts);
-        let dateNow = Date.now();
-        // let myTimeout = dateFromServer-dateNow
-        let myTimeout = 2000
-        let timeout = setTimeout(onClickButtonAudioStart, myTimeout)
-        console.log(`myTimeout: ${myTimeout}, timeout: ${timeout}`);
+        // let dateFromServer = new Date(start_ts);
+        // let dateNow = Date.now();
+        let timeoutToStart = Math.abs(start_ts - onMessageTsMs)
+        let resOfTimeout = setTimeout(onClickButtonAudioStart, timeoutToStart)
+        console.log(`timeoutToStart: ${timeoutToStart}, resOfTimeout: ${resOfTimeout}`);
         sendDataToServer(`{"jsonrpc": "2.0", "result": {"status":"success"}, "id": ${id}}`)
     }
     else if(method === GET_TIME){
@@ -80,28 +80,13 @@ setColorOnServerWriting = (color) => {
     document.getElementById('server_writing_id').style.backgroundColor = color
 }
 
-onFullyConnected = (payload) => {
-    id = payload['id'];
-    connection.push(CONNECT_EVENT, {
-        id: id,
-        name: username,
-        latitude: latitude,
-        longitude: longitude,
-    });
-    setInterval(() => getFakePosition(ping, (e) => console.log(e)), 1000);
-}
-
-ping = (position) => {
-    if (!run) return;
-    // removeMark('initial');
-    // setCurrentPosition(position);
-    console.log(`ping with latitude: ${latitude}, longitude: ${longitude}`);
-    connection.push(PING_EVENT, {
-        id: id,
-        latitude: latitude,
-        longitude: longitude,
-    });
-}
+// ping = (position) => {
+//     if (!run) return;
+//     console.log(`ping with latitude: ${latitude}, longitude: ${longitude}`);
+//     connection.push(PING, {
+//         id: id,
+//     });
+// }
 
 onClickButtonAudioStart = () => {
     console.log(`Audio start`);
@@ -116,32 +101,32 @@ onClickButtonAudioStop = () => {
 
 sendDataToServer = (textData) => {
     connection.push_str(textData);
-    console.log(`Send textData: ${textData}`)
+    console.log(`Send to Server: ${textData}`)
     document.getElementById('client_writing_id').value = textData
 }
 
 onClick_GET_ID = () => {
-    data = '{"jsonrpc": "2.0", "method": "get_id", "params": {"time_utc": 123123123}, "id": ' + String(++jsonrpc_id) + '}'
+    data = '{"jsonrpc": "2.0", "method": "get_id", "params": {"client_id": null}, "id": ' + String(++jsonrpc_id) + '}'
     sendDataToServer(data)
 }
 
 onClick_CREATE_GROUP = () => {
-    data = '{"jsonrpc": "2.0", "method": "create_group", "params": {"time_utc": 123123123}, "id": ' + String(++jsonrpc_id) + '}'
+    data = '{"jsonrpc": "2.0", "method": "create_group", "params": null, "id": ' + String(++jsonrpc_id) + '}'
     sendDataToServer(data)
 }
 
 onClick_SUBSCRIBE_TO_GROUP = () => {
-    data = '{"jsonrpc": "2.0", "method": "subscribe_to_group", "params": {"client_id": 111222,"group_id": 1}, "id": ' + String(++jsonrpc_id) + '}'
+    data = '{"jsonrpc": "2.0", "method": "subscribe_to_group", "params": {"group_id": 1}, "id": ' + String(++jsonrpc_id) + '}'
     sendDataToServer(data)
 }
 
 onClick_START_METRONOME = () => {
-    data = '{"jsonrpc": "2.0", "method": "start_metronome", "params": {"client_id": 111222,"group_id": 111222,"current_client_ts":1662817489000,"bpm":90}, "id": ' + String(++jsonrpc_id) + '}'
+    data = '{"jsonrpc": "2.0", "method": "start_metronome", "params": {"group_id": 111222,"ts_ms":1662817489000,"bpm":90}, "id": ' + String(++jsonrpc_id) + '}'
     sendDataToServer(data)
 }
 
 onClick_STOP_METRONOME = () => {
-    data = '{"jsonrpc": "2.0", "method": "stop_metronome", "params": {"client_id": 111222,"group_id": 111222,"current_client_ts":1662817489000}, "id": ' + String(++jsonrpc_id) + '}'
+    data = '{"jsonrpc": "2.0", "method": "stop_metronome", "params": {"group_id": 111222,"ts_ms":1662817489000}, "id": ' + String(++jsonrpc_id) + '}'
     sendDataToServer(data)
 }
 
@@ -155,6 +140,6 @@ onClick_STOP_METRONOME = () => {
 
 appendToCustomLog = (msg) => {
     let element = document.getElementById('log_text_id')
-    element.value += `[${Date.now()}] ${msg} \n`
+    element.value += `[${Date.now()}] ${msg}\n`
     element.scrollTop = element.scrollHeight
 }

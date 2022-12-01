@@ -2,7 +2,7 @@ from logging import Logger
 
 from aiohttp import web
 
-from app.store import Store
+from App.Store.Store import Store
 
 
 class Application(web.Application):

@@ -1,19 +1,13 @@
 # Documentation
 
 ################## websockets ##################
-# NOTE: client_id === group_id
-
 ###### client to server
-# INITIAL
---> connect to server
-<-- {"jsonrpc": "2.0", "result": {"status":"success/error","message":"something went wrong"}}
-
-# GET_ID
---> {"jsonrpc": "2.0", "method": "get_id", "params": {"time_utc": 123123123}, "id": 1}
+# GET_ID (TODO: If you save old id, you can send your id in the params)
+--> {"jsonrpc": "2.0", "method": "get_id", "params": {"client_id": null}, "id": 1}
 <-- {"jsonrpc": "2.0", "result": {"status":"success/error","client_id": 111222,"message":"can not create client_id"}, "id": 1}
 
 # CREATE_GROUP
---> {"jsonrpc": "2.0", "method": "create_group", "params": {"time_utc": 123123123}, "id": 1}
+--> {"jsonrpc": "2.0", "method": "create_group", "params": null, "id": 1}
 <-- {"jsonrpc": "2.0", "result": {"status":"success/error","group_id": 111222}, "id": 1}
 
 # SUBSCRIBE_TO_GROUP
@@ -21,22 +15,22 @@
 <-- {"jsonrpc": "2.0", "result": {"status":"success/error","message":"group is not exist"}, "id": 1}
 
 # START_METRONOME
---> {"jsonrpc": "2.0", "method": "start_metronome", "params": {"group_id": 111222,"current_client_ts":1662817489000,"bpm":90}, "id": 1}
+--> {"jsonrpc": "2.0", "method": "start_metronome", "params": {"group_id": 111222,"ts_ms":1662817489000,"bpm":90}, "id": 1}
 <-- {"jsonrpc": "2.0", "result": {"status":"success/error","message":"description"}, "id": 1}
 
 # UPDATE_TEMP
---> {"jsonrpc": "2.0", "method": "update_temp", "params": {"group_id": 111222,"current_client_ts":1662817489000,"bpm":90}, "id": 1}
+--> {"jsonrpc": "2.0", "method": "update_temp", "params": {"group_id": 111222,"ts_ms":1662817489000,"bpm":90}, "id": 1}
 <-- {"jsonrpc": "2.0", "result": {"status":"success/error","message":"description"}, "id": 1}
 
 # STOP_METRONOME
---> {"jsonrpc": "2.0", "method": "stop_metronome", "params": {"group_id": 111222,"current_client_ts":1662817489000}, "id": 1}
+--> {"jsonrpc": "2.0", "method": "stop_metronome", "params": {"group_id": 111222,"ts_ms":1662817489000}, "id": 1}
 <-- {"jsonrpc": "2.0", "result": {"status":"success/error","message":"description"}, "id": 1}
 
 
 ###### server to client
 # GET_TIME
 --> {"jsonrpc": "2.0", "method": "get_time", "params": null, "id": 1}
-<-- {"jsonrpc": "2.0", "result": {"status":"success/error","ts_ms":123321,"message":"description"}, "id": 1}
+<-- {"jsonrpc": "2.0", "result": {"status":"success/error","ts_ms":1662817489000,"message":"description"}, "id": 1}
 
 # PLAY_SOUND
 --> {"jsonrpc": "2.0", "method": "play_sound", "params": {"start_ts":1662817489000,"bpm":120}, "id": 1}

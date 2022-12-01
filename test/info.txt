@@ -1,3 +1,0 @@
-
-
-# websocket example https://github.com/ktsstudio/metaclass_websocket_webinar

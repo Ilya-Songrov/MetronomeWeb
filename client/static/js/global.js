@@ -7,16 +7,14 @@ let run = true;
 
 // user
 let username;
-let id = 'initial-id';
-let latitude, longitude;
-let jsonrpc_id = 0
+let id              = 'initial-id';
+let jsonrpc_id      = 0
 
-const MY_COLOR = 'green';
-const OTHER_COLOR = 'red';
+const MY_COLOR      = 'green';
+const OTHER_COLOR   = 'red';
 
 
 // client methods
-const INITIAL                 = 'initial'
 const GET_ID                  = 'get_id'
 const CREATE_GROUP            = 'create_group'
 const SUBSCRIBE_TO_GROUP      = 'subscribe_to_group'

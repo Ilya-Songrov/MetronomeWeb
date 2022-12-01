@@ -1,7 +1,7 @@
 from dataclasses import dataclass, asdict
 from utils.Utils import Utils
 
-from app.base.accessor import BaseAccessor
+from App.Base.Accessor import BaseAccessor
 
 
 @dataclass

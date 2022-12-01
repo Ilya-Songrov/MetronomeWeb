@@ -1,7 +1,7 @@
 import typing
 
 if typing.TYPE_CHECKING:
-    from app.store import Store
+    from App.Store.Store import Store
 
 
 class BaseAccessor:

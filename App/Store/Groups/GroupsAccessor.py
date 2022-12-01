@@ -1,8 +1,7 @@
 from dataclasses import dataclass, field
-from utils.Utils import Utils
 
-from app.base.accessor import BaseAccessor
-from app.store.users.users_accessor import User
+from App.Base.Accessor import BaseAccessor
+from App.Store.Users.UsersAccessor import User
 
 @dataclass
 class Group:
@@ -33,7 +32,7 @@ class GroupsAccessor(BaseAccessor):
     
     async def addUserToGroup(self, user: 'User', group_id: int) -> Group:
         group = await self.getGroup(group_id)
-        if group is not None and user not in group.subscribedUsers:
+        if group is not None and user not in group.subscribedUsers and user != group.userOwner:
             self.logger.debug(f'Add {user=} to {group=}')
             group.subscribedUsers.append(user)
         return group
