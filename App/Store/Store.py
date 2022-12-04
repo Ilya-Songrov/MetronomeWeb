@@ -1,6 +1,6 @@
 import typing
 
-from App.Store.Geo.GeoManager import GeoManager
+from App.Store.Metronome.MetronomeManager import MetronomeManager
 from App.Store.Users.UsersAccessor import UsersAccessor
 from App.Store.Groups.GroupsAccessor import GroupsAccessor
 from App.Store.WS.WSAccessor import WSAccessor
@@ -12,7 +12,7 @@ if typing.TYPE_CHECKING:
 class Store:
     def __init__(self, app: "Application"):
         self.app = app
-        self.wsAccessor     = WSAccessor(self)
-        self.geoManager     = GeoManager(self)
-        self.usersAccessor  = UsersAccessor(self)
-        self.groupAccessor  = GroupsAccessor(self)
+        self.metronomeManager   = MetronomeManager(self)
+        self.wsAccessor         = WSAccessor(self)
+        self.usersAccessor      = UsersAccessor(self)
+        self.groupAccessor      = GroupsAccessor(self)

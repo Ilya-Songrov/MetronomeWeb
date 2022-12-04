@@ -36,7 +36,7 @@ class WSConnectView(View):
         async with WSContext(
                 accessor=self.store.wsAccessor,
                 request=self.request,
-                close_callback=self.store.geoManager.onUserDisconnect,
+                close_callback=self.store.metronomeManager.onUserDisconnect,
         ) as connection_id:
-            await self.store.geoManager.handle(connection_id)
+            await self.store.metronomeManager.handle(connection_id)
         return

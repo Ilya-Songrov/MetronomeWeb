@@ -1,8 +1,11 @@
+import os
 import logging
 from logging import getLogger
 
 from aiohttp import web
 
+from Utils.ArgumentParser import MyArgumentParser, Arguments
+from Utils.Utils import Utils
 from App.Base.Application import Application
 from App.Core.Routes import setupRoutes
 from App.Store.Store import Store
@@ -19,4 +22,7 @@ def createApp() -> Application:
 
 
 if __name__ == '__main__':
-    web.run_app(createApp(), host='192.168.0.106', port=8000)
+    appArgs = MyArgumentParser.parseArguments()
+    Utils.replaceStrInFile({"${METRONOME_SERVER_CONNECT_HOST}": appArgs.connect_host
+            , "${METRONOME_SERVER_CONNECT_PORT}": str(appArgs.connect_port)}, f"{os.path.dirname(__file__)}/client/static/js/network.js")
+    web.run_app(createApp(), host=appArgs.listen_host, port=appArgs.listen_port)

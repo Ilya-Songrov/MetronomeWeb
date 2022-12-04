@@ -2,7 +2,6 @@
 let connection;
 let audio;
 let onMessageTsMs;
-let path;
 let run = true;
 
 // user

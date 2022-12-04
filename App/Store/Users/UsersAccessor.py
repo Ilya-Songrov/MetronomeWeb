@@ -1,5 +1,5 @@
 from dataclasses import dataclass, asdict
-from utils.Utils import Utils
+from Utils.Utils import Utils
 
 from App.Base.Accessor import BaseAccessor
 

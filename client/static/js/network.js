@@ -1,18 +1,13 @@
 class Connection {
     constructor(onOpen, onMessage, onClose, onError) {
-        if (path === '${CONNECT_PATH}') {
-            path = 'ws://192.168.0.106:8000/connect';
-        }
-        console.log(`Connection Consrtuctor path: ${path}`);
-        this.connection = new WebSocket(path);
+        // let wsPath = 'ws://${_METRONOME_SERVER_CONNECT_HOST}:${_METRONOME_SERVER_CONNECT_PORT}/connect';
+        let wsPath = 'ws://${METRONOME_SERVER_CONNECT_HOST}:${METRONOME_SERVER_CONNECT_PORT}/connect';
+        console.log(`Connection Consrtuctor wsPath: ${wsPath}`);
+        this.connection = new WebSocket(wsPath);
         this.connection.onopen = onOpen;
         this.connection.onclose = onClose;
         this.connection.onerror = onError;
         this.connection.onmessage = onMessage;
-    }
-
-    push = (kind, data) => {
-        this.connection.send(JSON.stringify({kind: kind, payload: data}));
     }
 
     push_str = (strData) => {

@@ -29,7 +29,7 @@ class WSContext:
         self._close_callback = close_callback
 
     async def __aenter__(self) -> str:
-        self.connection_id = await self._accessor.open(self._request, close_callback=self._close_callback)
+        self.connection_id = await self._accessor.open(self._request, closeCallback=self._close_callback)
         return self.connection_id
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -39,8 +39,8 @@ class WSContext:
 @dataclass
 class Connection:
     session: WebSocketResponse
-    timeout_task: Task
-    close_callback: typing.Callable[[str], typing.Awaitable] | None
+    timeoutTask: Task
+    closeCallback: typing.Callable[[str], typing.Awaitable] | None
 
 
 class WSAccessor(BaseAccessor):
@@ -55,7 +55,7 @@ class WSAccessor(BaseAccessor):
     async def open(
             self,
             request: 'Request',
-            close_callback: typing.Callable[[str], typing.Awaitable[typing.Any]] | None = None,
+            closeCallback: typing.Callable[[str], typing.Awaitable[typing.Any]] | None = None,
     ) -> str:
         ws_response = WebSocketResponse()
         await ws_response.prepare(request)
@@ -66,8 +66,8 @@ class WSAccessor(BaseAccessor):
 
         self._connections[connection_id] = Connection(
             session=ws_response,
-            timeout_task=self._createTimeoutTask(connection_id),
-            close_callback=close_callback,
+            timeoutTask=self._createTimeoutTask(connection_id),
+            closeCallback=closeCallback,
         )
         return connection_id
 
@@ -100,8 +100,8 @@ class WSAccessor(BaseAccessor):
 
         self.logger.info(f'Closing {connection_id=}')
 
-        if connection.close_callback:
-            await connection.close_callback(connection_id)
+        if connection.closeCallback:
+            await connection.closeCallback(connection_id)
 
         if not connection.session.closed:
             await connection.session.close()
@@ -132,5 +132,5 @@ class WSAccessor(BaseAccessor):
                 yield JSON_RPC_RS(result=data['result'], id=data['id'], jsonrpc=data['jsonrpc'])
 
     async def refreshConnection(self, connection_id: str):
-        self._connections[connection_id].timeout_task.cancel()
-        self._connections[connection_id].timeout_task = self._createTimeoutTask(connection_id)
+        self._connections[connection_id].timeoutTask.cancel()
+        self._connections[connection_id].timeoutTask = self._createTimeoutTask(connection_id)

@@ -2,13 +2,13 @@ import typing
 from dataclasses import asdict
 from datetime import datetime
 
-from utils.Utils import Utils
+from Utils.Utils import Utils
 from App.Base.Accessor import BaseManager
 from App.Store.Users.UsersAccessor import User
 from App.Base.Utils import doByTimeoutWrapper
 from App.Store.jsonrpc.jsonrpc import JSON_RPC_BASE, JSON_RPC_RQ, JSON_RPC_RS  
 
-class GeoClientMethod:
+class MetronomeClientMethod:
     GET_ID                  = 'get_id'
     CREATE_GROUP            = 'create_group'
     SUBSCRIBE_TO_GROUP      = 'subscribe_to_group'
@@ -18,18 +18,16 @@ class GeoClientMethod:
     DISCONNECT              = 'disconnect'
     PING                    = 'ping'
 
-class GeoServerMethod:
+class MetronomeServerMethod:
     GET_TIME                = 'get_time'
     PLAY_SOUND              = 'play_sound'
     STOP_SOUND              = 'stop_sound'
     
 
 
-class GeoManager(BaseManager):
+class MetronomeManager(BaseManager):
     class Meta:
-        name = 'geo_manager'
-
-    MAX_ERROR = 0.05
+        name = 'metronome_manager'
 
     def _init_(self) -> None:
         self._callbacksOnClientRS: dict[int, typing.Callable[['JSON_RPC_RS', str], typing.Awaitable]] = {}
@@ -52,7 +50,7 @@ class GeoManager(BaseManager):
 
     async def _handleRQ(self, rq: JSON_RPC_RQ, connection_id: str) -> bool:
         rs: JSON_RPC_RS = JSON_RPC_RS(result={"status":"error","message":"request error"}, id=rq.id)
-        if rq.method == GeoClientMethod.GET_ID:
+        if rq.method == MetronomeClientMethod.GET_ID:
             user = await self.store.usersAccessor.getUser(connection_id=connection_id)
             if user is not None:
                 rs = JSON_RPC_RS(
@@ -62,7 +60,7 @@ class GeoManager(BaseManager):
                     },
                     id=rq.id,
                 )
-        elif rq.method == GeoClientMethod.CREATE_GROUP:
+        elif rq.method == MetronomeClientMethod.CREATE_GROUP:
             user = await self.store.usersAccessor.getUser(connection_id=connection_id)
             if user is not None:
                 group = await self.store.groupAccessor.createGroup(userOwner=user)
@@ -73,7 +71,7 @@ class GeoManager(BaseManager):
                     },
                     id=rq.id,
                 )
-        elif rq.method == GeoClientMethod.SUBSCRIBE_TO_GROUP:
+        elif rq.method == MetronomeClientMethod.SUBSCRIBE_TO_GROUP:
             user = await self.store.usersAccessor.getUser(connection_id=connection_id)
             if user is not None:
                 group = await self.store.groupAccessor.addUserToGroup(user, group_id=rq.params['group_id'])
@@ -84,7 +82,7 @@ class GeoManager(BaseManager):
                     },
                     id=rq.id,
                 )
-        elif rq.method == GeoClientMethod.START_METRONOME:
+        elif rq.method == MetronomeClientMethod.START_METRONOME:
             user = await self.store.usersAccessor.getUser(connection_id=connection_id)
             if user is not None:
                 rs = JSON_RPC_RS(
@@ -97,7 +95,7 @@ class GeoManager(BaseManager):
 
                 listIdData: list[tuple[JSON_RPC_BASE,str]] = []
                 rqUser = JSON_RPC_RQ(
-                    method=GeoServerMethod.PLAY_SOUND,
+                    method=MetronomeServerMethod.PLAY_SOUND,
                     params={"start_ts":Utils.getCurrentTimestampMs()+1000-user.differenceInTsMs,"bpm":120},
                     id=Utils.getNextId(),
                 )
@@ -106,16 +104,16 @@ class GeoManager(BaseManager):
                 if group is not None:
                     for user in group.subscribedUsers:
                         rqUser = JSON_RPC_RQ(
-                            method=GeoServerMethod.PLAY_SOUND,
+                            method=MetronomeServerMethod.PLAY_SOUND,
                             params={"start_ts":Utils.getCurrentTimestampMs()+1000-user.differenceInTsMs,"bpm":120},
                             id=Utils.getNextId(),
                         )
                         listIdData.append([rqUser, user.connection_id])
                 await self.store.wsAccessor.broadcast(id_data=listIdData)
             return True
-        elif rq.method == GeoClientMethod.UPDATE_TEMP:
+        elif rq.method == MetronomeClientMethod.UPDATE_TEMP:
             await self._sendTestDataRS(connection_id)
-        elif rq.method == GeoClientMethod.STOP_METRONOME:
+        elif rq.method == MetronomeClientMethod.STOP_METRONOME:
             user = await self.store.usersAccessor.getUser(connection_id=connection_id)
             if user is not None:
                 rs = JSON_RPC_RS(
@@ -128,7 +126,7 @@ class GeoManager(BaseManager):
 
                 listIdData: list[tuple[JSON_RPC_BASE,str]] = []
                 rqUser = JSON_RPC_RQ(
-                    method=GeoServerMethod.STOP_SOUND,
+                    method=MetronomeServerMethod.STOP_SOUND,
                     params=None,
                     id=Utils.getNextId(),
                 )
@@ -157,7 +155,7 @@ class GeoManager(BaseManager):
     async def _sendRQ_GET_TIME(self, connection_id: str):
         self.logger.info(f'_sendRQ_GET_TIME {Utils.getCurrentTimestampMs()=}')
         rq = JSON_RPC_RQ(
-            method=GeoServerMethod.GET_TIME,
+            method=MetronomeServerMethod.GET_TIME,
             params=None,
             id=Utils.getNextId(),
         )
