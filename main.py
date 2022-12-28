@@ -23,6 +23,4 @@ def createApp() -> Application:
 
 if __name__ == '__main__':
     appArgs = MyArgumentParser.parseArguments()
-    Utils.replaceStrInFile({"${METRONOME_SERVER_CONNECT_HOST}": appArgs.connect_host
-            , "${METRONOME_SERVER_CONNECT_PORT}": str(appArgs.connect_port)}, f"{os.path.dirname(__file__)}/client/static/js/network.js")
     web.run_app(createApp(), host=appArgs.listen_host, port=appArgs.listen_port)

@@ -22,11 +22,8 @@ RUN pip install /wheels/* \
 WORKDIR /code
 COPY . .
 
-ARG METRONOME_SERVER_HOST_LISTEN
-ARG METRONOME_SERVER_PORT_LISTEN
-ARG METRONOME_SERVER_HOST_CONNECT
-ARG METRONOME_SERVER_PORT_CONNECT
-RUN cat client/static/js/network.js | envsubst > client/static/js/network.js.new && mv client/static/js/network.js.new client/static/js/network.js
+ARG METRONOME_SERVER_HOST
+ARG METRONOME_SERVER_PORT
 
 ENTRYPOINT ["python"]
-CMD ["main.py"]
+CMD ["main.py", "--listen_host", "$METRONOME_SERVER_HOST", "--listen_port", "$METRONOME_SERVER_PORT"]
