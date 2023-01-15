@@ -1,4 +1,5 @@
 # Documentation
+# https://www.jsonrpc.org/specification
 
 ################## websockets ##################
 ###### client to server
