@@ -1,6 +1,6 @@
 ## MetronomeWeb
 
-![Screen Shot](md/metronome.png)
+![Screen Shot](md/6613196_beat_bpm_metronome_music_tempo_icon.png)
 
 ## How to build docker
 ```
