@@ -1,26 +1,33 @@
-import os
-import logging
-from logging import getLogger
-
+import time
 from aiohttp import web
-
-from Utils.ArgumentParser import MyArgumentParser, Arguments
-from Utils.Utils import Utils
+from Utils.ArgumentParser import MyArgumentParser, AppArguments
+from Utils.MyLogger import MyLogger
 from App.Base.Application import Application
 from App.Core.Routes import setupRoutes
 from App.Store.Store import Store
 
 
 def createApp() -> Application:
-    app = web.Application()
-    # logging.basicConfig(level=logging.INFO)
-    logging.basicConfig(level=logging.DEBUG, format='[%(asctime)s %(levelname)s] {%(pathname)s:%(lineno)d} [p%(process)s]: %(message)s')
-    app.logger = getLogger()
-    app.store = Store(app)
+    app         = web.Application()
+    app.store   = Store(app)
     setupRoutes(app)
     return app
 
-
 if __name__ == '__main__':
-    appArgs = MyArgumentParser.parseArguments()
-    web.run_app(createApp(), host=appArgs.listen_host, port=appArgs.listen_port)
+    logger                          = MyLogger.createLoggerConfigsStdout()
+    appArgs                         = AppArguments()
+
+    while True:
+        try:
+            appArgs         = MyArgumentParser.parseArguments()
+            logger          = MyLogger.createLoggerConfigs(appArgs.log_dir_to_save, "metronome-web")
+            web.run_app(createApp(), host=appArgs.listen_host, port=appArgs.listen_port)
+        except KeyboardInterrupt:
+            logger.info("KeyboardInterrupt exception was caught")
+            break
+        except Exception as ex:
+            logger.exception(ex)
+
+        logger.info(f"Sleep. Next attempt will be in 10000 milliseconds.\n\n")
+        time.sleep(10)
+    

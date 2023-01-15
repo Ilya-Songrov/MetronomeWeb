@@ -34,7 +34,7 @@ class MetronomeManager(BaseManager):
         self._calcDifferenceInTsMs: dict[str, int] = {}
 
     async def handle(self, connection_id: str):
-        self._calcDifferenceInTsMs[connection_id] = Utils.getCurrentTimestampMs()
+        self._calcDifferenceInTsMs[connection_id] = Utils.getCurrentTsMs()
         await self.store.usersAccessor.addUser(connection_id=connection_id)
         await self._sendRQ_GET_TIME(connection_id)
         async for data in self.store.wsAccessor.streamData(connection_id):
@@ -96,7 +96,7 @@ class MetronomeManager(BaseManager):
                 listIdData: list[tuple[JSON_RPC_BASE,str]] = []
                 rqUser = JSON_RPC_RQ(
                     method=MetronomeServerMethod.PLAY_SOUND,
-                    params={"start_ts":Utils.getCurrentTimestampMs()+1000-user.differenceInTsMs,"bpm":120},
+                    params={"start_ts":Utils.getCurrentTsMs()+1000-user.differenceInTsMs,"bpm":120},
                     id=Utils.getNextId(),
                 )
                 listIdData.append([rqUser, user.connection_id])
@@ -105,7 +105,7 @@ class MetronomeManager(BaseManager):
                     for user in group.subscribedUsers:
                         rqUser = JSON_RPC_RQ(
                             method=MetronomeServerMethod.PLAY_SOUND,
-                            params={"start_ts":Utils.getCurrentTimestampMs()+1000-user.differenceInTsMs,"bpm":120},
+                            params={"start_ts":Utils.getCurrentTsMs()+1000-user.differenceInTsMs,"bpm":120},
                             id=Utils.getNextId(),
                         )
                         listIdData.append([rqUser, user.connection_id])
@@ -153,7 +153,7 @@ class MetronomeManager(BaseManager):
         return True
 
     async def _sendRQ_GET_TIME(self, connection_id: str):
-        self.logger.info(f'_sendRQ_GET_TIME {Utils.getCurrentTimestampMs()=}')
+        self.logger.info(f'_sendRQ_GET_TIME {Utils.getCurrentTsMs()=}')
         rq = JSON_RPC_RQ(
             method=MetronomeServerMethod.GET_TIME,
             params=None,
@@ -162,8 +162,8 @@ class MetronomeManager(BaseManager):
         await self._sendRQToClient(rq=rq, connection_id=connection_id, callbackOnRS=self._parseRS_GET_TIME)
 
     async def _parseRS_GET_TIME(self, rs: JSON_RPC_RS, connection_id: str):
-        self.logger.info(f'{Utils.getCurrentTimestampMs()=}')
-        currentTsMs: int = Utils.getCurrentTimestampMs()
+        self.logger.info(f'{Utils.getCurrentTsMs()=}')
+        currentTsMs: int = Utils.getCurrentTsMs()
         startRQTsMs: int = self._calcDifferenceInTsMs.get(connection_id, 0)
         clientTsMs: int = rs.result.get("ts_ms", 0)
         differenceInTsMs: int = int(currentTsMs - ((currentTsMs - startRQTsMs) / 2) - clientTsMs)

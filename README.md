@@ -1,17 +1,37 @@
-## Telegram Bot
+## MetronomeWeb
 
-![Screen Shot](md/MergedDocument.png)
+![Screen Shot](md/metronome.png)
 
-## How to build and run in docker
-- Read to build and run docker: [build-and-run-in-docker](/docs/build-and-run-in-docker.md)
+## How to build docker
+```
+cd <MetronomeWeb>
+sudo docker build . \
+    --force-rm \
+    --no-cache \
+    --tag metronome-web:1.0.0 \
+    --file ./Dockerfile
+```
 
+## How to run docker
+```
+sudo docker run \
+    --name metronome-web-name \
+    --network host \
+    --restart=always \
+    --detach \
+    --volume ~/metronome-web/logs:/folder-inside-docker/logs \
+    -e METRONOME_SERVER_HOST=127.0.0.1 \
+    -e METRONOME_SERVER_PORT=8080 \
+    -e LOG_DIR_TO_SAVE=/folder-inside-docker/logs \
+    metronome-web:1.0.0
+```
 
 ## How to run in terminal
 ```
 python3 -m venv venv
 source venv/bin/activate
 pip3 install -r requirements.txt
-python3 main.py --host localhost --port 8080
+python3 main.py --listen_host localhost --listen_port 8080
 ```
 
 ## Python export venv
@@ -22,4 +42,5 @@ pip3 install install aiohttp
 pip3 freeze > requirements.txt
 deactivate
 ```
+
 

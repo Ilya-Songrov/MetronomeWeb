@@ -57,4 +57,4 @@ class UsersAccessor(BaseAccessor):
         try:
             return self._client_ids.pop()
         except:
-            return Utils.getCurrentTimestampMs()
+            return Utils.getCurrentTsMs()
