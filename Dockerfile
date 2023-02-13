@@ -28,4 +28,5 @@ ENV METRONOME_SERVER_HOST=127.0.0.1
 ENV METRONOME_SERVER_PORT=8080
 ENV LOG_DIR_TO_SAVE='./Logs'
 
-ENTRYPOINT ["bash", "-c", "python main.py --listen_host $METRONOME_SERVER_HOST --listen_port $METRONOME_SERVER_PORT --log_dir_to_save $LOG_DIR_TO_SAVE"]
+ENTRYPOINT ["/bin/bash", "-c"]
+CMD ["python main.py --listen_host $METRONOME_SERVER_HOST --listen_port $METRONOME_SERVER_PORT --log_dir_to_save $LOG_DIR_TO_SAVE"]
